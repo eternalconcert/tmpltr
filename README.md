@@ -13,7 +13,7 @@
     app.port = 8080;
 
     // route registration:
-    app.route('/', () => renderTemplate('templates/index.html', {name: 'Bernd Benutzer'}));
+    app.route('/', (_req, _resp) => renderTemplate('templates/index.html', {name: 'Bernd Benutzer'}));
 
     app.route('/test/', () => renderTemplate('templates/test.html'));
 
@@ -33,6 +33,6 @@ The key can be used in the template and will be replaced by the value.
 A template might lool like this:
     <h1>Index!</h1>
     Hallo! Das hier ist der Body!<br />
-    Im Context steht folgender Name: <!-- contextVariable key -->
+    Im Context steht folgender Name: \<!-- contextVariable key -->
 
 As you can see, the contextVariable is used here.

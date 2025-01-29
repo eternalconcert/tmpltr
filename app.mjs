@@ -30,12 +30,15 @@ export class App {
         const extension = extname(url).slice(1);
         const mimetype = extension ? types[extension] : types.html;
         response.setHeader("Content-Type", mimetype);
+        response.setHeader("Content-Length", fileContent.length);
+        response.setHeader("Server", 'TMPLTR');
         response.writeHead(200);
         response.end(fileContent);
         return;
 
       } catch {
         response.setHeader("Content-Type", types.plain)
+        response.setHeader("Server", 'TMPLTR');
         response.writeHead(404);
         response.end('Not found');
         return;
@@ -44,14 +47,21 @@ export class App {
     }
 
     if (!this.routes[url]) {
+      response.setHeader("Server", 'TMPLTR');
       response.writeHead(404);
       response.end('Not found');
       return;
     }
 
-    response.setHeader("Content-Type", "text/html");
-    response.writeHead(200);
-    response.end(this.routes[url]());
+    const result = this.routes[url](request, response);
+    if (!response._header) {
+      response.setHeader("Content-Type", "text/html");
+      response.setHeader("Content-Length", result.length);
+      response.setHeader("Server", 'TMPLTR');
+      response.writeHead(200);
+
+    }
+    response.end(result);
     return;
   }
 

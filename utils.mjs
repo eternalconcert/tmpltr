@@ -15,7 +15,7 @@ export const types = {
 
 const regexExtends = /<!-- extends\s+([^\s]+)\s*-->/;
 
-export const renderTemplate = (fileName, context) => {
+export const renderTemplate = (fileName, context, _request, _response) => {
   const content = fs.readFileSync(fileName, 'utf-8');
 
   const match = content.match(regexExtends);
