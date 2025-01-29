@@ -24,7 +24,7 @@
 
 # Utilities
 
-    renderTemplate(templateName, context);
+    renderTemplate(templateName, context, request, response);
 
 The context might be undefined if not used, otherwise it must be an object in this form:
     { key: value }
