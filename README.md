@@ -31,7 +31,7 @@ The context might be undefined if not used, otherwise it must be an object in th
 The key can be used in the template and will be replaced by the value.
 
 A template might lool like this:
-    <h1>Index!</h1>
+    \<h1>Index!\</h1>
     Hallo! Das hier ist der Body!<br />
     Im Context steht folgender Name: \<!-- contextVariable key -->
 
