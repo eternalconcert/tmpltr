@@ -1,5 +1,18 @@
 import fs from 'fs';
 
+export const types = {
+    plain: 'text/plain',
+    html: 'text/html',
+    css: 'text/css',
+    js: 'application/javascript',
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    json: 'application/json',
+    xml: 'application/xml',
+  };
+
 const regexExtends = /<!-- extends\s+([^\s]+)\s*-->/;
 
 export const renderTemplate = (fileName, context) => {
