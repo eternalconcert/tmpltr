@@ -28,10 +28,7 @@ export class App {
     response.writeHead(200);
     response.end(this.routes[url]());
     return;
-
   }
-
-
 
   server = http.createServer(this.requestListener)
 
