@@ -1,5 +1,3 @@
-import fs from 'fs';
-
 export const types = {
     plain: 'text/plain',
     html: 'text/html',
@@ -17,13 +15,11 @@ export const extractBlocksTemplate = (content) => {
   const blockRegex = /{% block (\w+) %}([\s\S]*?){% endblock %}/g;
   const blocks = {};
   let match;
-
   while ((match = blockRegex.exec(content)) !== null) {
-    const blockName = match[1]; // Der Blockname (z. B. "head", "content")
-    const blockContent = match[2].trim(); // Der Inhalt des Blocks
+    const blockName = match[1];
+    const blockContent = match[2].trim();
     blocks[blockName] = blockContent;
   }
-
   return blocks;
 }
 

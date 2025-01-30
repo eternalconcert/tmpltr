@@ -1,0 +1,45 @@
+@font-face {
+  font-family: "Geist";
+  src: url("static/Geist[wght].ttf") format("truetype");
+  font-weight: 100 1000;
+}
+
+@font-face {
+  font-family: "GeistMono";
+  src: url("static/GeistMono[wght].ttf") format("truetype");
+  font-weight: 100 1000;
+}
+
+h3 {
+  margin: 0 0 10px 0;
+}
+
+body, html, a {
+  background-color: black;
+  color: lightgray;
+  font-family: GeistMono, monospace
+}
+
+body {
+  max-width: 900px;
+  margin: 50px auto;
+  padding: 20px;
+}
+
+.rendered-example {
+  margin-left: 2rem;
+  margin-bottom: 4rem;
+  margin-top: 1rem;
+  background-color: lightgrey;
+  color: black;
+  padding: 10px;
+}
+
+#head {
+  margin-bottom: 50px;
+}
+
+#footer {
+  width: 250px;
+  margin: 50px auto;
+}
