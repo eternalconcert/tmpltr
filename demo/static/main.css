@@ -1,13 +1,17 @@
 @font-face {
   font-family: "Geist";
-  src: url("static/Geist[wght].ttf") format("truetype");
+  src: url("Geist-wght.ttf") format("truetype");
   font-weight: 100 1000;
 }
 
 @font-face {
   font-family: "GeistMono";
-  src: url("static/GeistMono[wght].ttf") format("truetype");
+  src: url("GeistMono-wght.ttf") format("truetype");
   font-weight: 100 1000;
+}
+
+h2 {
+  margin-top: 4rem;
 }
 
 h3 {
@@ -21,22 +25,22 @@ body, html, a {
 }
 
 body {
+  text-align: justify;
   max-width: 900px;
   margin: 50px auto;
   padding: 20px;
 }
 
 .rendered-example {
-  margin-left: 2rem;
   margin-bottom: 4rem;
   margin-top: 1rem;
   background-color: lightgrey;
   color: black;
-  padding: 10px;
+  padding: 2rem 2rem 2rem 4rem;
 }
 
 #head {
-  margin-bottom: 50px;
+  margin-bottom: 20px;
 }
 
 #footer {

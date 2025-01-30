@@ -9,7 +9,7 @@ let counter = -1;
 
 app.route('/', () => {
     counter++;
-    return app.renderTemplate('index.html', { firstName: 'Jack', lastName: 'Shephard', status: 'lost', counter: counter, items: ['John Locke', 'Kate Austen'] });
+    return app.renderTemplate('index.html', { firstName: 'Jack', lastName: 'Shephard', status: 'lost', counter: counter, passengers: ['Jack', 'John', 'Kate', 'Sawyer', 'Hurley', 'Sayid', 'Charlie', 'Claire', 'Michael', 'Shannon', 'Jin-Soo', 'Sun-Hwa', 'Boone', 'Walter'] });
 });
 
 app.route('/imprint/', async () => app.renderTemplate('imprint.html'));
