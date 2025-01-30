@@ -1,0 +1,28 @@
+{
+  "name": "tmpltr",
+  "version": "1.0.0",
+  "description": "Template like it's 2010",
+  "main": "app.js",
+  "scripts": {
+    "dev": "cd demo; node testServer.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eternalconcert/tmpltr.git"
+  },
+  "keywords": [
+    "server",
+    "templating",
+    "flask",
+    "jinja"
+  ],
+  "author": "Christian Kokoska and the community",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/eternalconcert/tmpltr/issues"
+  },
+  "homepage": "https://github.com/eternalconcert/tmpltr#readme",
+  "dependencies": {
+  }
+}

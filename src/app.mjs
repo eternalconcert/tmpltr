@@ -1,12 +1,13 @@
 import fs from 'fs';
 import http from 'http';
 import { extname } from 'path';
-import { types } from './utils.mjs';
+import { types, extractBlocksTemplate, replaceBlocks, replaceContext } from './utils.mjs';
 
 export class App {
-  constructor(host, port) {
+  constructor(host, port, templateDir) {
     this.host = host || 'localhost';
     this.port = port || 3000;
+    this.templateDir = templateDir || 'templates';
   }
 
   staticPath = '';
@@ -17,7 +18,7 @@ export class App {
     this.routes[routePath] = callback;
   }
 
-  requestListener = (request, response) => {
+  requestListener = async (request, response) => {
     let url = request.url;
     if (!url.endsWith('/') && !url.startsWith(this.staticPath)) {
       url = `${url}/`;
@@ -53,7 +54,7 @@ export class App {
       return;
     }
 
-    const result = this.routes[url](request, response);
+    const result = await this.routes[url](request, response);
     if (!response._header) {
       response.setHeader("Content-Type", "text/html");
       response.setHeader("Content-Length", result.length);
@@ -65,12 +66,32 @@ export class App {
     return;
   }
 
+  renderTemplate = (fileName, context, _request, _response) => {
+    const regexExtends = /{% extends\s+([^\s]+)\s* %}/;
+    const content = fs.readFileSync(`${this.templateDir}/${fileName}`, 'utf-8');
+
+    const match = content.match(regexExtends);
+    let base = '';
+    if (match && match[1]) {
+      base = fs.readFileSync(`${this.templateDir}/${match[1]}`, 'utf-8');
+    }
+
+    let result = content.replace(regexExtends, '');
+    const blocks = extractBlocksTemplate(result);
+    if (base) {
+      result = replaceBlocks(base, blocks);
+    }
+    if (context) {
+      result = replaceContext(result, context);
+    }
+    return result;
+  }
+
   server = http.createServer(this.requestListener)
 
   serve() {
     this.server.listen(this.port, this.host, () => {
       console.log(`Server running at http://${this.host}:${this.port}/`);
     });
-
   }
 }

@@ -1,0 +1,11 @@
+{% extends base.html %}
+{% block title %}Das ist der Index!{% endblock %}
+{% block body %}
+  <h1>Index!</h1>
+  Hallo! Das hier ist der Body!<br />
+  Im Context steht folgender Name: {{ name }}<br />
+  Counter: {{ counter }}<br />
+  {% for item in items %}
+    <p><b>{{ item }}</b></p>
+  {% endfor %}
+{% endblock %}
