@@ -1,0 +1,13 @@
+job: build
+image: docker.softcreate.de/eternalconcert/builder-default
+stages:
+  - name: image
+    run: |
+      docker login docker.softcreate.de --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
+      export DEBIAN_FRONTEND=noninteractive
+      docker build . -t tmpltr
+      docker tag tmpltr docker.softcreate.de/eternalconcert/tmpltr:latest
+      docker push docker.softcreate.de/eternalconcert/tmpltr:latest
+    env:
+      DOCKER_USERNAME: ${DOCKER_USERNAME}
+      DOCKER_PASSWORD: ${DOCKER_PASSWORD}

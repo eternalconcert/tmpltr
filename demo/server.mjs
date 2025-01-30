@@ -1,6 +1,6 @@
 import { App } from '../src/app.mjs';
 
-const app = new App();
+const app = new App('0.0.0.0');
 
 app.staticPath = '/static/';
 // app.templateDir = '/test/';
