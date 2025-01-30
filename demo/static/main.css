@@ -12,10 +12,11 @@
 
 h2 {
   margin-top: 4rem;
+  margin-bottom: 2rem;
 }
 
-h3 {
-  margin: 0 0 10px 0;
+html {
+  scroll-behavior: smooth;
 }
 
 body, html, a {
@@ -29,6 +30,10 @@ body {
   max-width: 900px;
   margin: 50px auto;
   padding: 20px;
+}
+
+p {
+  margin-bottom: 2rem;
 }
 
 .rendered-example {
@@ -46,4 +51,31 @@ body {
 #footer {
   width: 250px;
   margin: 50px auto;
+}
+
+@media only screen and (max-width: 600px) {
+  body {
+    margin: 0 auto;
+  }
+}
+
+nav.menu {
+  display: flex;
+  justify-content: space-around;
+  border: 2px dotted lightgray;
+  padding: 10px;
+  margin-top: 4rem;
+  scroll-behavior: smooth;
+}
+
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+#counter {
+  color:rgb(18, 18, 18);
 }

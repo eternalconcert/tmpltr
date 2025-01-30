@@ -1,85 +1,78 @@
 {% extends base.html %}
 {% block title %}Index{% endblock %}
 {% block body %}
+  <h2>Template like it's 2010!</h2>
   <p>
     TMPLTR offers the ability to server side render HTML pages and use the full power of JavaScript. It is heavy inspired by <a href="https://palletsprojects.com/projects/flask/">Flask</a> and <a href="https://palletsprojects.com/projects/jinja/">Jinja</a>.
   </p>
   <p>
     If you are familiar with these awesome pieces of software, learning TMPLTR will be no big deal for you.
   </p>
-  <h2>Examples</h2>
-  <h3>Context variables</h3>
-  The context is a JavaScript object that contains variables which can be used in the template. If you pass this object to the template
+
+  <h2>Getting started</h2>
+
+  <p>
+    Create a file called `server.mjs` and add the following code:
+  </p>
   <pre>
     <code class="javascript">
-      {
-          firstName: 'Jack',
-          lastName: 'Shephard',
-          status: 'lost',
-      }
+      // server.mjs
+      import { App } from 'src/app.mjs';
+
+      const app = new App();
+
+      app.route('/', () => 'hello, world');
+
+      app.serve();
     </code>
   </pre>
-  you can use it like this in the template:
+
+  <p>
+    Open your browser and navigate to <a href="http://localhost:3000">http://localhost:3000</a>
+  </p>
+  <p>
+    If all works, you would see something like this:
+  </p>
+  <div class="rendered-example">
+    hello, world
+  </div>
+
+  <p>
+    Now create a folder called `templates` next to your server.mjs and in this folder a file called `index.html`. Add the following code:
+  </p>
+
   <pre>
     <code class="html">
-      &lt;h3&gt;Passenger information:&lt;/h3&gt;
-      &lt;div&gt;Name: &#123;&#123; lastName &#125;&#125;, &#123;&#123; firstName &#125;&#125;&lt;/div&gt;
-      &lt;div&gt;Status:  status &#125;&#125;&lt;/div&gt;
+      &lt;!-- index.html --&gt;
+      <h1>Your flight number: &#123;&#123; flightNumber &#125;&#125;</h1>
     </code>
   </pre>
 
-  The final result will be this:
+  <p>
+    Back in server.mjs, change the content to match this:
+  </p>
 
-  <div class="rendered-example">
-    <h3>Passenger information:</h3>
-    <div>Name: {{ lastName }}, {{ firstName }}</div>
-    <div>Status: {{ status }}</div>
-  </div>
-  <h3>Context loops</h3>
-  Beside the possibility to inject simple variables, you can also pass arrays (of values of simple types) to the template. In the template you can iterate those array:
   <pre>
     <code class="javascript">
-      { passengers:
-        [
-          'Jack',
-          'John',
-          'Kate',
-          'Sawyer',
-          'Hurley',
-          'Sayid',
-          'Charlie',
-          'Claire',
-          'Michael',
-          'Shannon',
-          'Jin-Soo',
-          'Sun-Hwa',
-          'Boone',
-          'Walter',
-        ]
-      };
-    </code>
-  </pre>
-  you can use it like this in the template:
-  <pre>
-    <code class="html">
-      &lt;h3&gt;Passengers&lt;/h3&gt;
-      &lt;ol&gt;
-        &#123;% for passenger in passengers %&#125;
-          &lt;li&gt;&#123;&#123; passenger &#125;&#125;&lt;/li&gt;
-        &#123;% endfor %&#125;
-      &lt;/ol&gt;
-    </code>
-  </pre>
+      // server.mjs
+      import { App } from 'src/app.mjs';
 
-  This renders to:
+      const app = new App();
+
+      app.route('/', () => app.renderTemplate('index.html', { flightNumber: '815' }));
+
+      app.serve();
+    </code>
+  </pre>
+  <p>
+    Refresh your browser and crush into the world of templating.
+  </p>
   <div class="rendered-example">
-    <h3>Passengers</h3>
-    <ol>
-      {% for passenger in passengers %}
-        <li>{{ passenger }}</li>
-      {% endfor %}
-    </ol>
+    Your flight number: {{ flightNumber }}
   </div>
-  Counter: {{ counter }}<br />
+
+  <div id="counter">
+    Counter: {{ counter }}<br />
+  </div>
 
 {% endblock %}

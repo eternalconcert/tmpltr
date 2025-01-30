@@ -10,7 +10,7 @@ export class App {
     this.templateDir = templateDir || 'templates';
   }
 
-  staticPath = '';
+  staticPath = '/static/';
 
   routes = {};
 

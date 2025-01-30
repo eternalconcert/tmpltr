@@ -2,19 +2,24 @@
   <title>{% block title %} - TMPLTR</title>
     <meta http-equiv="content-type" content="text/html;charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="static/favicon.png" type="image/png" />
-    <link rel="stylesheet" type="text/css" href="static/main.css">
-    <link rel="stylesheet" href="static/monokai.min.css">
-    <script src="static/highlight.min.js"></script>
+    <link rel="icon" href="/static/favicon.png" type="image/png" />
+    <link rel="stylesheet" type="text/css" href="/static/main.css">
+    <link rel="stylesheet" href="/static/monokai.min.css">
+    <script src="/static/highlight.min.js"></script>
     <script>hljs.highlightAll();</script>
 </head>
 <body>
   <div id="head">
     <h1>TMPLTR</h1>
-    <h2>Template like it's 2010!</h2>
+    <nav class="menu">
+      <div><a href="/">About</a></div>
+      <div><a href="/examples/">Examples</a></div>
+      <div><a href="/documentation/">Documentation</a></div>
+      <div><a href="https://github.com/eternalconcert/tmpltr" target="_blank">Repository &rarr;</a></div>
+    </nav>
   </div>
   {% block body %}
-  <div id=footer>
+  <div id="footer">
     <a href="/imprint">Imprint</a> - <a href="/privacy">Privacy policy</a>
   </div>
 </body>

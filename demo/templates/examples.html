@@ -1,0 +1,79 @@
+{% extends base.html %}
+{% block title %}Examples{% endblock %}
+{% block body %}
+  <h2>Examples</h2>
+  <h3>Context variables</h3>
+  The context is a JavaScript object that contains variables which can be used in the template. If you pass this object to the template
+  <pre>
+    <code class="javascript">
+      {
+          firstName: 'Jack',
+          lastName: 'Shephard',
+          status: 'lost',
+      }
+    </code>
+  </pre>
+  you can use it like this in the template:
+  <pre>
+    <code class="html">
+      &lt;h3&gt;Passenger information:&lt;/h3&gt;
+      &lt;div&gt;Name: &#123;&#123; lastName &#125;&#125;, &#123;&#123; firstName &#125;&#125;&lt;/div&gt;
+      &lt;div&gt;Status: status &#125;&#125;&lt;/div&gt;
+    </code>
+  </pre>
+
+  The final result will be this:
+
+  <div class="rendered-example">
+    <h3>Passenger information:</h3>
+    <div>Name: {{ lastName }}, {{ firstName }}</div>
+    <div>Status: {{ status }}</div>
+  </div>
+  <h3>Context loops</h3>
+  Beside the possibility to inject simple variables, you can also pass arrays (of values of simple types) to the template. In the template you can iterate those array:
+  <pre>
+    <code class="javascript">
+      { passengers:
+        [
+          'Jack',
+          'John',
+          'Kate',
+          'Sawyer',
+          'Hurley',
+          'Sayid',
+          'Charlie',
+          'Claire',
+          'Michael',
+          'Shannon',
+          'Jin-Soo',
+          'Sun-Hwa',
+          'Boone',
+          'Walter',
+        ]
+      };
+    </code>
+  </pre>
+  you can use it like this in the template:
+  <pre>
+    <code class="html">
+      &lt;h3&gt;Passengers&lt;/h3&gt;
+      &lt;ol&gt;
+        &#123;% for passenger in passengers %&#125;
+          &lt;li&gt;&#123;&#123; passenger &#125;&#125;&lt;/li&gt;
+        &#123;% endfor %&#125;
+      &lt;/ol&gt;
+    </code>
+  </pre>
+
+  This renders to:
+  <div class="rendered-example">
+    <h3>Passengers</h3>
+    <ol>
+      {% for passenger in passengers %}
+        <li>{{ passenger }}</li>
+      {% endfor %}
+    </ol>
+  </div>
+  Counter: {{ counter }}<br />
+
+{% endblock %}

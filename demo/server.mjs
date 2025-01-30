@@ -7,11 +7,42 @@ app.staticPath = '/static/';
 
 let counter = -1;
 
+app.route('/privacy/', async () => app.renderTemplate('privacy.html'));
+
 app.route('/', () => {
     counter++;
-    return app.renderTemplate('index.html', { firstName: 'Jack', lastName: 'Shephard', status: 'lost', counter: counter, passengers: ['Jack', 'John', 'Kate', 'Sawyer', 'Hurley', 'Sayid', 'Charlie', 'Claire', 'Michael', 'Shannon', 'Jin-Soo', 'Sun-Hwa', 'Boone', 'Walter'] });
+    return app.renderTemplate('index.html', { counter: counter, flightNumber: '815' });
 });
 
+app.route('/examples/', () => {
+    counter++;
+    return app.renderTemplate('examples.html',
+        {
+            firstName: 'Jack',
+            lastName: 'Shephard',
+            status: 'lost',
+            counter: counter,
+            passengers: [
+                'Jack',
+                'John',
+                'Kate',
+                'Sawyer',
+                'Hurley',
+                'Sayid',
+                'Charlie',
+                'Claire',
+                'Michael',
+                'Shannon',
+                'Jin-Soo',
+                'Sun-Hwa',
+                'Boone',
+                'Walter',
+            ],
+        }
+    );
+});
+
+app.route('/documentation/', async () => app.renderTemplate('documentation.html'));
 app.route('/imprint/', async () => app.renderTemplate('imprint.html'));
 app.route('/privacy/', async () => app.renderTemplate('privacy.html'));
 
