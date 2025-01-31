@@ -34,17 +34,30 @@ export const replaceBlocks = (content, blocks) => {
 }
 
 export const replaceContext = (content, context) => {
-  let contextReplaced = content.replace(/{{ (\w+) }}/g, (match, varName) => {
+
+  let contextReplaced = content.replace(/{% for (\w+) in (\w+) %}([\s\S]*?){% endfor %}/g, (_match, item, iterable, inner) => {
+    return context[iterable].map(i => {
+      const regex = new RegExp(`{{ ${item} }}`, "g");
+      const result = inner;
+      return result.replace(regex, i);
+    }).join('');
+  });
+
+  contextReplaced = contextReplaced.replace(/{{\s*([\w.\-]+)\s*}}(?![^]*?{%\s*for\b[^]*?{%\s*endfor\s*%})/g, (match, varName) => {
+    const splittedVarname = varName.split('.');
+    varName = splittedVarname[0];
+    const varProps = splittedVarname.slice(1, splittedVarname.length);
     if (context[varName] === undefined) {
       return match;
     }
-    return context[varName];
-  });
-  contextReplaced = contextReplaced.replace(/{% for (\w+) in (\w+) %}([\s\S]*?){% endfor %}/, (_match, item, items, inner) => {
-    return context[items].map(i => {
-      const regex = new RegExp(`{{ ${item} }}`, "g");
-      return inner.replace(regex, i)
-    }).join('');
+    if (varProps.length === 0) {
+      return context[varName];
+    }
+    let nextLevelProp = context[varName];
+    varProps.forEach(prop => {
+      nextLevelProp = nextLevelProp[prop];
+    })
+    return nextLevelProp;
   });
   return contextReplaced;
 }

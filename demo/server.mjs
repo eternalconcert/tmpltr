@@ -19,40 +19,49 @@ app.route('/privacy/', async () => app.renderTemplate('privacy.html'));
 
 DbObject.setDbPath('demo.db');
 
-// DbObject.database.exec(`
-//   CREATE TABLE data(
-//     id INTEGER PRIMARY KEY AUTOINCREMENT,
-//     firstName TEXT,
-//     lastName TEXT
-//   ) STRICT
-// `);
+const initDb = () => {
+  DbObject.database.exec(`
+    CREATE TABLE data(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      firstName TEXT,
+      lastName TEXT,
+      gender TEXT
+    ) STRICT
+  `);
+  const insert = DbObject.database.prepare('INSERT INTO data (firstName, lastName, gender) VALUES (?, ?, ?)');
 
-// const insert = DbObject.database.prepare('INSERT INTO data (firstName, lastName) VALUES (?, ?)');
+  insert.run('Jack', 'Shephard', 'm');
+  insert.run('Hugo', 'Reyes', 'm');
+  insert.run('Jin-Soo', 'Kwon', 'm');
+  insert.run('Kate', 'Austen', 'f');
+  insert.run('Claire', 'Littleton', 'f');
+  insert.run('Sun-Hwa', 'Kwon', 'f');
+}
 
-// insert.run('Jack', 'Shephard');
-// insert.run('Kate', 'Austen');
-
+// initDb();
 
 class Passenger extends DbObject {
   static tableName = 'data';
-  static fieldNames = ['id', 'firstName', 'lastName'];
+  static fieldNames = ['id', 'firstName', 'lastName', 'gender'];
 }
 
-// console.log(Passenger.getAll())
 app.route('/', () => {
-    const dbRes = Passenger.getByFilter({ firstName: 'Jack' })
     counter++;
-    return app.renderTemplate('index.html', { counter: counter, flightNumber: '815', dbItems: dbRes.map(item => `${item.firstName} ${item.lastName}`) });
+    return app.renderTemplate('index.html', {
+        counter: counter,
+        flightNumber: '815',
+    });
 });
 
 app.route('/examples/', () => {
-    counter++;
+    const dbRes = Passenger.getByFilter({ gender: 'f' })
     return app.renderTemplate('examples.html',
         {
+            dbItems: dbRes.map(item => `${item.firstName} ${item.lastName}`),
+            passenger: { name: { firstName: 'John', lastName: 'Locke' } },
             firstName: 'Jack',
             lastName: 'Shephard',
             status: 'lost',
-            counter: counter,
             passengers: [
                 'Jack',
                 'John',

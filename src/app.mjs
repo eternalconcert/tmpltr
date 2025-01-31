@@ -63,7 +63,6 @@ export class App {
       contentType = "text/html";
       statusCode = 200;
     }
-    console.log('inside response')
     response.setHeader("Server", 'TMPLTR');
     response.setHeader("Content-Length", responseContent.length);
     response.setHeader("Content-Type", contentType);

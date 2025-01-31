@@ -18,7 +18,7 @@
     <code class="html">
       &lt;h3&gt;Passenger information:&lt;/h3&gt;
       &lt;div&gt;Name: &#123;&#123; lastName &#125;&#125;, &#123;&#123; firstName &#125;&#125;&lt;/div&gt;
-      &lt;div&gt;Status: status &#125;&#125;&lt;/div&gt;
+      &lt;div&gt;Status: &#123;&#123; status &#125;&#125;&lt;/div&gt;
     </code>
   </pre>
 
@@ -74,6 +74,18 @@
       {% endfor %}
     </ol>
   </div>
-  Counter: {{ counter }}<br />
+
+  <div id="counter">
+  </div>
+
+  <h3>From DB</h3>
+  {% for item in dbItems %}
+    {{ item }}<br />
+  {% endfor %}
+
+  <h4>Nested properties</h4>
+  {{ passenger.name.firstName }} {{ passenger.name.lastName }}
+
+
 
 {% endblock %}
