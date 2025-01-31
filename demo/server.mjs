@@ -1,4 +1,6 @@
 import { App } from '../src/app.mjs';
+import { DbObject } from '../src/orm.mjs';
+
 
 const app = new App('0.0.0.0');
 
@@ -15,9 +17,32 @@ app.beforeResponse((req, resp) => {
 
 app.route('/privacy/', async () => app.renderTemplate('privacy.html'));
 
+DbObject.setDbPath('demo.db');
+
+// DbObject.database.exec(`
+//   CREATE TABLE data(
+//     id INTEGER PRIMARY KEY AUTOINCREMENT,
+//     firstName TEXT,
+//     lastName TEXT
+//   ) STRICT
+// `);
+
+// const insert = DbObject.database.prepare('INSERT INTO data (firstName, lastName) VALUES (?, ?)');
+
+// insert.run('Jack', 'Shephard');
+// insert.run('Kate', 'Austen');
+
+
+class Passenger extends DbObject {
+  static tableName = 'data';
+  static fieldNames = ['id', 'firstName', 'lastName'];
+}
+
+// console.log(Passenger.getAll())
 app.route('/', () => {
+    const dbRes = Passenger.getByFilter({ firstName: 'Jack' })
     counter++;
-    return app.renderTemplate('index.html', { counter: counter, flightNumber: '815' });
+    return app.renderTemplate('index.html', { counter: counter, flightNumber: '815', dbItems: dbRes.map(item => `${item.firstName} ${item.lastName}`) });
 });
 
 app.route('/examples/', () => {
