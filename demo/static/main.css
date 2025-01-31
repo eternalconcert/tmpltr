@@ -44,6 +44,10 @@ p {
   padding: 2rem 2rem 2rem 4rem;
 }
 
+.rendered-example h3 {
+  margin-top: 0;
+}
+
 #head {
   margin-bottom: 20px;
 }
@@ -85,4 +89,25 @@ a:hover {
   nav.menu div {
     margin: 10px 0;
   }
+}
+
+.codeblock {
+  position: relative;
+}
+
+.codeblock button {
+  position: absolute;
+  top: 25px;
+  right: 10px;
+  background-color: transparent;
+  border: 2px dotted lightgray;
+  cursor: pointer;
+  color: lightgray;
+  transition: 300ms;
+  width: 60px;
+  height: 25px;
+}
+
+.codeblock button.clicked {
+  background-color: rgb(148, 148, 148);
 }

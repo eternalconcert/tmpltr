@@ -11,6 +11,10 @@ export const types = {
     xml: 'application/xml',
   };
 
+export const getContentType = (type) => {
+  return types[type] || types['plain'];
+}
+
 export const extractBlocksTemplate = (content) => {
   const blockRegex = /{% block (\w+) %}([\s\S]*?){% endblock %}/g;
   const blocks = {};

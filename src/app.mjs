@@ -1,68 +1,77 @@
 import fs from 'fs';
 import http from 'http';
 import { extname } from 'path';
-import { types, extractBlocksTemplate, replaceBlocks, replaceContext } from './utils.mjs';
+import { types, extractBlocksTemplate, replaceBlocks, replaceContext, getContentType } from './utils.mjs';
 
 export class App {
   constructor(host, port, templateDir) {
     this.host = host || 'localhost';
     this.port = port || 3000;
     this.templateDir = templateDir || 'templates';
+    this.beforeRequestCallbacks = [];
+    this.beforeResponseCallbacks = [];
   }
 
   staticPath = '/static/';
 
   routes = {};
 
+  beforeRequest = (callback) => {
+    this.beforeRequestCallbacks.push(callback);
+  };
+
+  beforeResponse = (callback) => {
+    this.beforeResponseCallbacks.push(callback);
+  }
+
   route = (routePath, callback) => {
     this.routes[routePath] = callback;
   }
 
   requestListener = async (request, response) => {
+    this.beforeRequestCallbacks.forEach(async callback => await callback(request, response));
+
     let url = request.url;
     if (!url.endsWith('/') && !url.startsWith(this.staticPath)) {
       url = `${url}/`;
     }
 
+    let responseContent = '';
+    let statusCode = 0;
+    let contentType = types.plain;
     if(url.startsWith(this.staticPath)) {
       const fileName = url.replace(this.staticPath, '');
       try {
         const fileContent = fs.readFileSync(process.cwd() + this.staticPath + fileName);
         const extension = extname(url).slice(1);
-        const mimetype = extension ? types[extension] : types.html;
-        response.setHeader("Content-Type", mimetype);
-        response.setHeader("Content-Length", fileContent.length);
-        response.setHeader("Server", 'TMPLTR');
-        response.writeHead(200);
-        response.end(fileContent);
-        return;
-
+        contentType = extension ? getContentType(extension) : types.html;
+        statusCode = 200;
+        responseContent = fileContent;
       } catch {
-        response.setHeader("Content-Type", types.plain)
-        response.setHeader("Server", 'TMPLTR');
-        response.writeHead(404);
-        response.end('Not found');
-        return;
+        contentType = types.plain;
+        statusCode = 404;
+        responseContent = 'Not found';
       }
-
+    }
+    else if (!this.routes[url]) {
+      statusCode = 404;
+      responseContent = 'Not found';
     }
 
-    if (!this.routes[url]) {
-      response.setHeader("Server", 'TMPLTR');
-      response.writeHead(404);
-      response.end('Not found');
-      return;
+    if (!statusCode) {
+      responseContent = await this.routes[url](request, response);
+      contentType = "text/html";
+      statusCode = 200;
     }
-
-    const result = await this.routes[url](request, response);
-    if (!response._header) {
-      response.setHeader("Content-Type", "text/html");
-      response.setHeader("Content-Length", result.length);
-      response.setHeader("Server", 'TMPLTR');
-      response.writeHead(200);
-
+    console.log('inside response')
+    response.setHeader("Server", 'TMPLTR');
+    response.setHeader("Content-Length", responseContent.length);
+    response.setHeader("Content-Type", contentType);
+    this.beforeResponseCallbacks.forEach(async callback => await callback(request, response));
+    if (response.statusCode === 200 && statusCode !== 200) {
+      response.writeHead(statusCode);
     }
-    response.end(result);
+    response.end(responseContent);
     return;
   }
 

@@ -7,6 +7,12 @@ app.staticPath = '/static/';
 
 let counter = -1;
 
+app.beforeRequest((req, _resp) => console.log(`[Before request] URL: ${req.url}`));
+app.beforeResponse((req, _resp) => console.log(`[Before response] URL: ${req.url}`));
+app.beforeResponse((req, resp) => {
+    resp.setHeader("Server", 'TMPLTR/Demo instance');
+});
+
 app.route('/privacy/', async () => app.renderTemplate('privacy.html'));
 
 app.route('/', () => {
