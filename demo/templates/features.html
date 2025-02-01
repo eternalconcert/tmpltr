@@ -1,0 +1,47 @@
+{% extends base.html %}
+{% block title %}Features{% endblock %}
+{% block body %}
+  <nav class="jumpmenu">
+    <div>Page navigation:</div>
+    <div><a href="#server">Server</a></div>
+    <div><a href="#server">Template engine</a></div>
+    <div><a href="#server">ORM</a></div>
+  </nav>
+
+  <h2>Features</h2>
+  <div class="chapter">
+    <h3 id="server">Server</h3><a href="#head">↑</a>
+  </div>
+  <p>
+    TMPLTR comes with a bleeding edge node:http server. Starting is very easy. To set up a static file server, create a file called `server.mjs` with this content:
+  </p>
+  <pre class="codeblock">
+    <code class="javascript">
+    import { App } from '../src/app.mjs';
+
+    const app = new App();
+
+    app.serve();
+    </code>
+  </pre>
+  <p>
+    That's it! Just place the files you want to server into a folder called `static` and start the server by typing:
+  </p>
+  <pre class="codeblock">
+    <code class="bash">
+    node server.mjs
+    </code>
+  </pre>
+  <p>
+    TMPLTR uses bleeding edge features of node. Threrefore you might need to add the --experimental-sqlite flag. You can also use the watch ability of node to make your live easier:
+  </p>
+  <pre class="codeblock">
+    <code class="bash">
+    node --experimental-sqlite --watch server.mjs
+    </code>
+  </pre>
+  <p>
+    Now the server will reload on every file change.
+  </p>
+
+{% endblock %}

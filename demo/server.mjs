@@ -83,6 +83,7 @@ app.route('/examples/', () => {
 });
 
 app.route('/documentation/', async () => app.renderTemplate('documentation.html'));
+app.route('/features/', async () => app.renderTemplate('features.html'));
 app.route('/imprint/', async () => app.renderTemplate('imprint.html'));
 app.route('/privacy/', async () => app.renderTemplate('privacy.html'));
 
