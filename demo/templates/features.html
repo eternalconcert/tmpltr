@@ -4,13 +4,13 @@
   <nav class="jumpmenu">
     <div>Page navigation:</div>
     <div><a href="#server">Server</a></div>
-    <div><a href="#server">Template engine</a></div>
+    <div><a href="#template-engine">Template engine</a></div>
     <div><a href="#server">ORM</a></div>
   </nav>
 
   <h2>Features</h2>
   <div class="chapter">
-    <h3 id="server">Server</h3><a href="#head">↑</a>
+    <h3 id="server">Server</h3><a href="#head">&uarr;</a>
   </div>
   <p>
     TMPLTR comes with a bleeding edge node:http server. Starting is very easy. To set up a static file server, create a file called `server.mjs` with this content:
@@ -42,6 +42,88 @@
   </pre>
   <p>
     Now the server will reload on every file change.
+  </p>
+
+  <h2>Template engine</h2>
+  <div class="chapter">
+    <h3 id="template-engine">As static page generator</h3><a href="#head">&uarr;</a>
+  </div>
+  <p>
+    Although the template engine is designed to serve as an on-request function to generate pages in the server context, it can be used as a static page generator. To get familiar with the engine, this is the less complex approach. The main use case will be described afterwards.
+  </p>
+  <p>
+    Create a file called `page-generator.mjs` and paste the following code into that file:
+  </p>
+  <pre class="codeblock">
+    <code class="javascript">
+    import { App } from '../src/app.mjs';
+
+    const app = new App();
+
+    const pageContent = app.renderTemplate('static-page.html');
+
+    console.log(pageContent);
+    </code>
+  </pre>
+
+  <p>
+    Create a called `static-page.html` in a folder called `templates`, and plagce that folder next to the `page-generator.mjs`. Add the follwing text to `static-page.html`:
+  </p>
+
+  <pre class="codeblock">
+    <code class="html">
+    &lt;h1&gt;Pilot&lt;/h1&gt;
+    &lt;p&gt;Jack awakens disoriented in a jungle..&lt;/p&gt;
+    </code>
+  </pre>
+
+  <p>Run the following command:</p>
+  <pre class="codeblock">
+    <code class="bash">
+    node page-generator.mjs
+    </code>
+  </pre>
+  <p>
+    This should print the following content to your screen:
+  </p>
+
+  <div class="rendered-example console">
+&lt;h1&gt;Pilot&lt;/h1&gt;
+&lt;p&gt;Jack awakens disoriented in a jungle..&lt;/p&gt;
+  </div>
+  <p>
+    Okay, lame.. But at least it is rendered. Let's add some context! Change the content of `static-page.html` to match the following:
+  </p>
+  <pre class="codeblock">
+    <code class="html">
+    &lt;h1&gt;Pilot&lt;/h1&gt;
+    &lt;h2&gt;Episode: &#123;&#123; episodeNumber &#125;&#125;&lt;/h2&gt;
+    &lt;p&gt;Jack awakens disoriented in a jungle..&lt;/p&gt;
+    </code>
+  </pre>
+  <p>
+    Modify the content of `page-generator.mjs`:
+  </p>
+  <pre class="codeblock">
+    <code class="javascript">
+    import { App } from '../src/app.mjs';
+
+    const app = new App();
+
+    const pageContent = app.renderTemplate('privacy.html', { episodeNumber: 1 });
+
+    console.log(pageContent);
+    </code>
+  </pre>
+
+  <p>Run page-generator.mjs again, this should be the result:</p>
+  <div class="rendered-example console">
+    &lt;h1&gt;Pilot&lt;/h1&gt;
+    &lt;h2&gt;Episode: 1&lt;/h2&gt;
+    &lt;p&gt;Jack awakens disoriented in a jungle..&lt;/p&gt;
+  </div>
+  <p>
+    With these changes, we have added some context to our content. The episodeNumber can now be easily passed to the template.
   </p>
 
 {% endblock %}

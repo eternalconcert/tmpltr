@@ -48,6 +48,13 @@ p {
   margin-top: 0;
 }
 
+.rendered-example.console {
+  margin-bottom: 4rem;
+  margin-top: 1rem;
+  white-space: pre;
+  padding: 1rem 2rem;
+}
+
 #head {
   margin-bottom: 20px;
 }
