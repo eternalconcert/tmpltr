@@ -1,10 +1,10 @@
 {
-  "name": "tmpltr",
+  "name": "@eternalconcert/tmpltr",
   "version": "1.0.0",
   "description": "Template like it's 2010",
-  "main": "app.js",
+  "main": "src/index.mjs",
   "scripts": {
-    "dev": "cd demo; node testServer.mjs",
+    "dev": "cd demo; node server.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -22,7 +22,11 @@
   "bugs": {
     "url": "https://github.com/eternalconcert/tmpltr/issues"
   },
+  "files": [
+    "src"
+  ],
   "homepage": "https://github.com/eternalconcert/tmpltr#readme",
-  "dependencies": {
+  "directories": {
+    "test": "test"
   }
 }
