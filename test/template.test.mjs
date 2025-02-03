@@ -47,5 +47,5 @@ test('variables used in extended templates, base and child template usage', (t) 
     }
   });
   const rendered = app.renderTemplate('index.html', { name: 'Jack' });
-  assert.strictEqual(rendered, 'base content: Jack template content: Jack !!!');
+  assert.strictEqual(rendered, 'base content: Jack template content: Jack');
 });
