@@ -1,12 +1,16 @@
 import { DatabaseSync } from 'node:sqlite';
 
 export class DbObject {
-  static setDbPath(path) {
-    this.dbPath = path;
+  static dbInstance = null;
+
+  static setDb(path) {
+    if (!this.dbInstance) {
+      this.dbInstance = new DatabaseSync(path);
+    };
   };
 
   static get database() {
-    return new DatabaseSync(this.dbPath)
+    return this.dbInstance;
   };
 
   constructor(results) {

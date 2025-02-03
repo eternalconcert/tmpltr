@@ -17,7 +17,7 @@ app.beforeResponse((req, resp) => {
 
 app.route('/privacy/', async () => app.renderTemplate('privacy.html'));
 
-DbObject.setDbPath('demo.db');
+DbObject.setDb('demo.db');
 
 const initDb = () => {
   DbObject.database.exec(`

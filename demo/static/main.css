@@ -86,6 +86,10 @@ nav.jumpmenu {
   align-items: center;
 }
 
+.chapter h2 {
+  margin-top: 2rem;
+}
+
 a {
   text-decoration: none;
 }
@@ -104,10 +108,10 @@ a:hover {
     margin: 0 auto;
   }
 
-  nav.menu {
+  nav.menu, nav.jumpmenu {
     display: block;
   }
-  nav.menu div {
+  nav.menu div, nav.jumpmenu div {
     margin: 10px 0;
   }
 }
