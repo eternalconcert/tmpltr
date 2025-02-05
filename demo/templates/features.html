@@ -126,7 +126,27 @@
     With these changes, we have added some context to our content. The episodeNumber can now be passed easily to the template.
   </p>
 
+  <h2>ORM</h2>
   <div class="chapter">
-    <h2 id="orm">ORM</h2><a href="#head">&uarr;</a>
+    <h3 id="orm">Basic concepts</h3><a href="#head">&uarr;</a>
   </div>
+  <p>
+    TMPLTR comes with an ORM, that is inspired by the Django builtin ORM. The main idea is, to use class methods to retrieve objects from the database, and instance methods to modify this objects. A small example:
+  </p>
+  <pre class="codeblock">
+    <code class="javascript">
+      User.getAll();
+      // returns a list of all users
+
+      User.getByFilter({ lastName: 'Kwon' });
+      // returns a list of all users with the last name 'Kwon'
+
+      const user = User.getByFilter({ id: '3' })[0];
+      // user contains now a single User-object.
+
+      user.delete();
+      // deletes the user from the database
+    </code>
+  </pre>
+
 {% endblock %}
