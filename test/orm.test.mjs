@@ -55,10 +55,49 @@ test('get by filter, multiple results', (_t) => {
   assert.deepEqual(users[2].props(), { firstName: 'Boone', lastName: 'Carlyle', gender: 'm', id: 4 });
 });
 
+
+test('get by filter, multiple results, first', (_t) => {
+  const users = User.getByFilter({ gender: 'f' }, { extremum: 'first' });
+  assert.deepEqual(users.props(), { firstName: 'Kate', lastName: 'Austen', gender: 'f', id: 3 });
+});
+
+test('get by filter, multiple results, last', (_t) => {
+  const users = User.getByFilter({ gender: 'm' }, { extremum: 'last' });
+  assert.deepEqual(users.props(), { firstName: 'Boone', lastName: 'Carlyle', gender: 'm', id: 4 });
+});
+
 test('get by filter, firstName and gender', (_t) => {
   const users = User.getByFilter({ firstName: 'Claire', gender: 'f' });
   assert.equal(users.length, 1);
   assert.deepEqual(users[0].props(), { firstName: 'Claire', lastName: 'Littleton', gender: 'f', id: 5 });
+});
+
+test('get by filter, order by', (_t) => {
+  const users = User.getByFilter({ gender: 'm' }, { orderBy: 'lastName' });
+  assert.equal(users.length, 3);
+
+  assert.deepEqual(users[0].props(), { firstName: 'Boone', lastName: 'Carlyle', gender: 'm', id: 4 });
+  assert.deepEqual(users[1].props(), { firstName: 'Hugo', lastName: 'Reyes', gender: 'm', id: 2 });
+  assert.deepEqual(users[2].props(), { firstName: 'Jack', lastName: 'Shephard', gender: 'm', id: 1 });
+});
+
+test('get by filter, order by, descending', (_t) => {
+  const users = User.getByFilter({ gender: 'm' }, { orderBy: 'lastName', sortOrder: 'DESC' });
+  assert.equal(users.length, 3);
+
+  assert.deepEqual(users[0].props(), { firstName: 'Jack', lastName: 'Shephard', gender: 'm', id: 1 });
+  assert.deepEqual(users[1].props(), { firstName: 'Hugo', lastName: 'Reyes', gender: 'm', id: 2 });
+  assert.deepEqual(users[2].props(), { firstName: 'Boone', lastName: 'Carlyle', gender: 'm', id: 4 });
+});
+
+test('get by filter, order by, ascending, first', (_t) => {
+  const user = User.getByFilter({ gender: 'm' }, { orderBy: 'lastName', extremum: 'first' });
+  assert.deepEqual(user.props(), { firstName: 'Boone', lastName: 'Carlyle', gender: 'm', id: 4 });
+});
+
+test('get by filter, order by, descending, first', (_t) => {
+  const user = User.getByFilter({ gender: 'm' }, { orderBy: 'lastName', sortOrder: 'DESC', extremum: 'first' });
+  assert.deepEqual(user.props(), { firstName: 'Jack', lastName: 'Shephard', gender: 'm', id: 1 });
 });
 
 test('create', (_t) => {

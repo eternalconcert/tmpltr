@@ -32,19 +32,32 @@ export class DbObject {
   }
 
   static getAll = function () {
-    const query = this.database.prepare(`SELECT ${this.fieldNames.join(', ')} FROM ${this.tableName} ORDER BY id`);
-    return query.all().map(res => new this(res));
+    return this.getByFilter({});
   }
 
-  static getByFilter = function (filter) {
+  static getByFilter = function (filter, config = {}) {
     // filter: { firstName: 'Jack', lastName: 'Shephard' }
-    if (!filter) {
-      return [];
+    let conditions = Object.keys(filter).map(field => `${field} = ?`).join(' AND ');
+    let values = Object.values(filter);
+    if (filter && typeof filter === 'object' && Object.keys(filter).length === 0) {
+      conditions = '1 = 1';
+      values = [];
     }
-    const conditions = Object.keys(filter).map(field => `${field} = ?`).join(' AND ');
-    const values = Object.values(filter);
-    const query = this.database.prepare(`SELECT ${this.fieldNames.join(', ')} FROM ${this.tableName} WHERE ${conditions} ORDER BY id`);
-    return query.all(...values).map(res => new this(res));
+    const { extremum, orderBy, sortOrder } = config;
+
+    let orderPart = ` ORDER BY ${orderBy ? orderBy : 'id'}`
+    let direction = sortOrder === 'DESC' ? ' DESC' : ' ASC';
+
+    let limitPart = ''
+    if (extremum) {
+      limitPart = ' LIMIT 1'
+      if (extremum === 'last') {
+        direction = ' DESC';
+      }
+    }
+    const query = this.database.prepare(`SELECT ${this.fieldNames.join(', ')} FROM ${this.tableName} WHERE ${conditions}${orderPart}${direction}${limitPart}`);
+    const result = query.all(...values).map(res => new this(res));
+    return extremum ? result[0] : result;
   }
 
   static create = function (item) {
@@ -79,5 +92,4 @@ export class DbObject {
     prepared.run(this.id);
     return true;
   }
-
 };
