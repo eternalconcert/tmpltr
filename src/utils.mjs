@@ -61,3 +61,9 @@ export const replaceContext = (content, context) => {
   });
   return contextReplaced;
 }
+
+
+export const replaceModifications = (content, modifications) => {
+  const modificationsRegex = /{% modify (\w+) %}([\s\S]*?){% endmodify %}/g;
+  return content.replace(modificationsRegex, (_match, callback, innerText) => modifications[callback](innerText));
+};

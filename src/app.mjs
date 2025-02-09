@@ -1,7 +1,14 @@
 import fs from 'fs';
 import http from 'http';
 import { extname } from 'path';
-import { types, extractBlocksTemplate, replaceBlocks, replaceContext, getContentType } from './utils.mjs';
+import {
+  types,
+  extractBlocksTemplate,
+  replaceBlocks,
+  replaceContext,
+  getContentType,
+  replaceModifications,
+} from './utils.mjs';
 
 export class App {
   constructor(host, port, templateDir) {
@@ -74,7 +81,7 @@ export class App {
     return;
   }
 
-  renderTemplate = (fileName, context, _request, _response) => {
+  renderTemplate = (fileName, context, modifications, _request, _response) => {
     const regexExtends = /{% extends\s+([^\s]+)\s* %}/;
     const content = fs.readFileSync(`${this.templateDir}/${fileName}`, 'utf-8');
 
@@ -92,6 +99,11 @@ export class App {
     if (context) {
       result = replaceContext(result, context);
     }
+
+    if (modifications) {
+      result = replaceModifications(result, modifications);
+    }
+
     return result;
   }
 
