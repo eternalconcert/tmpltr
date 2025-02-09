@@ -13,7 +13,7 @@
     <h3 id="server">Server</h3><a href="#head">&uarr;</a>
   </div>
   <p>
-    TMPLTR comes with a bleeding edge node:http server. Starting is very easy. To set up a static file server, create a file called `server.mjs` with this content:
+    TMPLTR comes with a bleeding edge node:http server. Getting started is very easy. To set up a static file server, create a file called `server.mjs` with the following content:
   </p>
   <pre class="codeblock">
     <code class="javascript">
@@ -25,7 +25,7 @@
     </code>
   </pre>
   <p>
-    That's it! Just place the files you want to server into a folder called `static` and start the server by typing:
+    That's it! Just put the files you want to server in a folder called `static` and start the server by typing:
   </p>
   <pre class="codeblock">
     <code class="bash">
@@ -33,7 +33,7 @@
     </code>
   </pre>
   <p>
-    TMPLTR uses bleeding edge features of node. Threrefore you might need to add the --experimental-sqlite flag. You can also use the watch ability of node to make your live easier:
+    TMPLTR uses the latest features of node. So you may need to add the --experimental-sqlite flag. You can also use the watch feature of node to make your life easier:
   </p>
   <pre class="codeblock">
     <code class="bash">
@@ -41,7 +41,7 @@
     </code>
   </pre>
   <p>
-    Now the server will reload on every file change.
+    Now the server will reload every time a file changes.
   </p>
 
   <h2>Template engine</h2>
@@ -49,10 +49,10 @@
     <h3 id="template-engine">As static page generator</h3><a href="#head">&uarr;</a>
   </div>
   <p>
-    Although the template engine is designed to serve as an on-request function to generate pages in the server context, it can be used as a static page generator. To get familiar with the engine, this is the less complex approach. The main use case will be described afterwards.
+    Although the Template Engine is designed as an on-request function to generate pages in the context of the server, it can also be used as a static page generator. This is the least complex way to get familiar with the engine. The main use case is described below.
   </p>
   <p>
-    Create a file called `page-generator.mjs` and paste the following code into that file:
+    Create a file called `page-generator.mjs` and paste the following code into it:
   </p>
   <pre class="codeblock">
     <code class="javascript">
@@ -67,7 +67,7 @@
   </pre>
 
   <p>
-    Create a called `static-page.html` in a folder called `templates`, and plagce that folder next to the `page-generator.mjs`. Add the follwing text to `static-page.html`:
+    Create a file called `static-page.html' in a folder called `templates', and place this folder next to the `page-generator.mjs' folder. Add the following text to `static-page.html
   </p>
 
   <pre class="codeblock">
@@ -92,7 +92,7 @@
 &lt;p&gt;Jack awakens disoriented in a jungle..&lt;/p&gt;
   </div>
   <p>
-    Okay, lame.. But at least it is rendered. Let's add some context! Change the content of `static-page.html` to match the following:
+    Okay, lame.. But at least it is renders. Let's add some context! Change the content of `static-page.html` to match the following:
   </p>
   <pre class="codeblock">
     <code class="html">
@@ -123,7 +123,7 @@
     &lt;p&gt;Jack awakens disoriented in a jungle..&lt;/p&gt;
   </div>
   <p>
-    With these changes, we have added some context to our content. The episodeNumber can now be passed easily to the template.
+    With these changes, we have added some context to our content. The episodeNumber can now be easily passed to the template.
   </p>
 
   <h2>ORM</h2>
@@ -131,7 +131,7 @@
     <h3 id="orm">Basic concepts</h3><a href="#head">&uarr;</a>
   </div>
   <p>
-    TMPLTR comes with an ORM, that is inspired by the Django builtin ORM. The main idea is, to use class methods to retrieve objects from the database, and instance methods to modify this objects. A small example:
+    TMPLTR comes with an ORM that is inspired by Django's built-in ORM. The main idea is to use class methods to retrieve objects from the database and instance methods to modify those objects. A small example:
   </p>
   <pre class="codeblock">
     <code class="javascript">
