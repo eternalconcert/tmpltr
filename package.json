@@ -1,6 +1,6 @@
 {
   "name": "@eternalconcert/tmpltr",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Template like it's 2010",
   "main": "src/index.mjs",
   "scripts": {
@@ -25,7 +25,7 @@
   "files": [
     "src"
   ],
-  "homepage": "https://github.com/eternalconcert/tmpltr#readme",
+  "homepage": "https://tmpltr.softcreate.de/",
   "directories": {
     "test": "test"
   }
