@@ -1,7 +1,6 @@
 # Example:
 
-    import { App } from './app.mjs';
-    import { renderTemplate }  from './utils.mjs';
+    import { App, renderTemplate } from '@eternalconcert/tmpltr';
 
     const app = new App();
     // or
@@ -33,6 +32,6 @@ The key can be used in the template and will be replaced by the value.
 A template might lool like this:
     \<h1>Index!\</h1>
     Hallo! Das hier ist der Body!<br />
-    Im Context steht folgender Name: \<!-- contextVariable key -->
+    Im Context steht folgender Name: {{ contextVariable key }}
 
 As you can see, the contextVariable is used here.
