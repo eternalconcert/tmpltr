@@ -1,6 +1,6 @@
 import { App } from '../src/app.mjs';
 import { DbObject } from '../src/orm.mjs';
-
+import url from 'url';
 
 const app = new App('0.0.0.0');
 
@@ -92,6 +92,18 @@ app.route('/test/', async () => {
     const json = await data.json();
     return app.renderTemplate('test.html', json);
 });
+
+app.route('/cookie/set/', (request, response) => {
+    const parsedUrl = url.parse(request.url, true);
+    const query = parsedUrl.query;
+    app.session.setValue('name', query.value, request)
+    return `you requsadfsadfested: ${request.url} with ${query.value}`;
+});
+
+app.route('/cookie/', (request) => {
+    return `value: ${app.session.getValue('name', request)}`;
+});
+
 app.route('/reqresp/', (request, response) => {
     response.writeHead(404);
     return `you requested: ${request.url}`;

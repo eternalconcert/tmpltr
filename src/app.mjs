@@ -1,6 +1,7 @@
 import fs from 'fs';
 import http from 'http';
 import { extname } from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import {
   types,
   extractBlocksTemplate,
@@ -10,6 +11,43 @@ import {
   replaceModifications,
 } from './utils.mjs';
 
+const getClientKeyFromClientSession = (request) => {
+  return parseCookies(request)['tmpltr-session'] || '';
+}
+
+class Session {
+  data = {};
+
+  setValue(key, value, request) {
+    const clientKey = request.clientKey;
+    if (!this.data[clientKey]) {
+      this.data[clientKey] = {};
+    }
+    this.data[clientKey][key] = value;
+    console.log(this.data)
+  }
+
+  getValue(key, request) {
+    const clientKey = getClientKeyFromClientSession(request);
+    return this.data[clientKey][key];
+  }
+}
+
+function parseCookies(req) {
+  const cookieHeader = req.headers.cookie || '';
+  const cookies = {};
+
+  cookieHeader.split(';').forEach(cookie => {
+    const [name, ...rest] = cookie.trim().split('=');
+    const value = rest.join('=');
+    if (name && value) {
+      cookies[name] = decodeURIComponent(value);
+    }
+  });
+
+  return cookies;
+}
+
 export class App {
   constructor(host, port, templateDir) {
     this.host = host || 'localhost';
@@ -17,6 +55,7 @@ export class App {
     this.templateDir = templateDir || 'templates';
     this.beforeRequestCallbacks = [];
     this.beforeResponseCallbacks = [];
+    this.session = new Session();
   }
 
   staticPath = '/static/';
@@ -36,21 +75,29 @@ export class App {
   }
 
   requestListener = async (request, response) => {
+    let clientKey = getClientKeyFromClientSession(request);
+    if (!clientKey) {
+      clientKey = uuidv4();
+    }
+    request.clientKey = clientKey;
+
     this.beforeRequestCallbacks.forEach(async callback => await callback(request, response));
 
-    let url = request.url;
-    if (!url.endsWith('/') && !url.startsWith(this.staticPath)) {
-      url = `${url}/`;
+    const parsedUrl = new URL(request.url, `http://${request.headers.host}`);
+    let pathname = parsedUrl.pathname;
+
+    if (!pathname.endsWith('/') && !pathname.startsWith(this.staticPath)) {
+      pathname = `${pathname}/`;
     }
 
     let responseContent = '';
     let statusCode = 0;
     let contentType = types.plain;
-    if(url.startsWith(this.staticPath)) {
-      const fileName = url.replace(this.staticPath, '');
+    if(pathname.startsWith(this.staticPath)) {
+      const fileName = pathname.replace(this.staticPath, '');
       try {
         const fileContent = fs.readFileSync(process.cwd() + this.staticPath + fileName);
-        const extension = extname(url).slice(1);
+        const extension = extname(pathname).slice(1);
         contentType = extension ? getContentType(extension) : types.html;
         statusCode = 200;
         responseContent = fileContent;
@@ -60,19 +107,21 @@ export class App {
         responseContent = 'Not found';
       }
     }
-    else if (!this.routes[url]) {
+    else if (!this.routes[pathname]) {
       statusCode = 404;
       responseContent = 'Not found';
     }
 
     if (!statusCode) {
-      responseContent = await this.routes[url](request, response);
+      responseContent = await this.routes[pathname](request, response);
       contentType = "text/html";
       statusCode = 200;
     }
     response.setHeader("Server", 'TMPLTR');
     response.setHeader("Content-Length", responseContent.length);
     response.setHeader("Content-Type", contentType);
+    response.setHeader("Set-Cookie", `tmpltr-session=${clientKey}; HttpOnly; Path=/; Max-Age=3600`);
+
     this.beforeResponseCallbacks.forEach(async callback => await callback(request, response));
     if (response.statusCode === 200 && statusCode !== 200) {
       response.writeHead(statusCode);
