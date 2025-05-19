@@ -7,6 +7,7 @@ import {
   extractBlocksTemplate,
   replaceBlocks,
   replaceContext,
+  replaceConditionals,
   getContentType,
   replaceModifications,
 } from './utils.mjs';
@@ -24,7 +25,6 @@ class Session {
       this.data[clientKey] = {};
     }
     this.data[clientKey][key] = value;
-    console.log(this.data)
   }
 
   getValue(key, request) {
@@ -74,6 +74,11 @@ export class App {
     this.routes[routePath] = callback;
   }
 
+  redirect = (target, response) => {
+    response.statusCode = 302;
+    response.setHeader('Location', target);
+  }
+
   requestListener = async (request, response) => {
     let clientKey = getClientKeyFromClientSession(request);
     if (!clientKey) {
@@ -93,7 +98,7 @@ export class App {
     let responseContent = '';
     let statusCode = 0;
     let contentType = types.plain;
-    if(pathname.startsWith(this.staticPath)) {
+    if (pathname.startsWith(this.staticPath)) {
       const fileName = pathname.replace(this.staticPath, '');
       try {
         const fileContent = fs.readFileSync(process.cwd() + this.staticPath + fileName);
@@ -112,13 +117,26 @@ export class App {
       responseContent = 'Not found';
     }
 
-    if (!statusCode) {
+    // Nur bei POST: Body einlesen und request.form setzen
+    if (request.method === 'POST') {
+      await new Promise((resolve) => {
+        let body = '';
+        request.on('data', chunk => body += chunk.toString());
+        request.on('end', () => {
+          request.form = new URLSearchParams(body);
+          resolve();
+        });
+      });
+    }
+
+    // Falls es eine Route gibt, sie ausführen (request.form ist jetzt verfügbar!)
+    if (!statusCode && this.routes[pathname]) {
       responseContent = await this.routes[pathname](request, response);
       contentType = "text/html";
       statusCode = 200;
     }
     response.setHeader("Server", 'TMPLTR');
-    response.setHeader("Content-Length", responseContent.length);
+    response.setHeader("Content-Length", Buffer.byteLength(responseContent));
     response.setHeader("Content-Type", contentType);
     response.setHeader("Set-Cookie", `tmpltr-session=${clientKey}; HttpOnly; Path=/; Max-Age=3600`);
 
@@ -145,6 +163,9 @@ export class App {
     if (base) {
       result = replaceBlocks(base, blocks);
     }
+
+    result = replaceConditionals(result, context);
+
     if (context) {
       result = replaceContext(result, context);
     }

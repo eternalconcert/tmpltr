@@ -1,2 +1,2 @@
 export { App } from './app.mjs';
-export { DbObject } from './orm.mjs';
+export { DbObject, ResultError } from './orm.mjs';

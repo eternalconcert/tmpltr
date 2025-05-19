@@ -1,5 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 
+export class ResultError extends Error { };
+
 export class DbObject {
   static dbInstance = null;
 
@@ -58,6 +60,10 @@ export class DbObject {
     const query = this.database.prepare(`SELECT ${this.fieldNames.join(', ')} FROM ${this.tableName} WHERE ${conditions}${orderPart}${direction}${limitPart}`);
     const result = query.all(...values).map(res => new this(res));
     return extremum ? result[0] : result;
+  }
+
+  static first = function (filter, config = {}) {
+    return this.getByFilter(filter, config)[0];
   }
 
   static create = function (item) {

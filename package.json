@@ -1,6 +1,6 @@
 {
   "name": "@eternalconcert/tmpltr",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Template like it's 2010",
   "main": "src/index.mjs",
   "scripts": {
@@ -17,6 +17,9 @@
     "flask",
     "jinja"
   ],
+  "dependencies": {
+    "uuid": "^11.1.0"
+  },
   "author": "Christian Kokoska and the community",
   "license": "MIT",
   "bugs": {

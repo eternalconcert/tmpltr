@@ -1,15 +1,15 @@
 export const types = {
-    plain: 'text/plain',
-    html: 'text/html',
-    css: 'text/css',
-    js: 'application/javascript',
-    png: 'image/png',
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    gif: 'image/gif',
-    json: 'application/json',
-    xml: 'application/xml',
-  };
+  plain: 'text/plain',
+  html: 'text/html',
+  css: 'text/css',
+  js: 'application/javascript',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  json: 'application/json',
+  xml: 'application/xml',
+};
 
 export const getContentType = (type) => {
   return types[type] || types['plain'];
@@ -36,10 +36,23 @@ export const replaceBlocks = (content, blocks) => {
 export const replaceContext = (content, context) => {
 
   let contextReplaced = content.replace(/{% for (\w+) in (\w+) %}([\s\S]*?){% endfor %}/g, (_match, item, iterable, inner) => {
-    return context[iterable].map(i => {
+    return context[iterable].map((i, idx) => {
       const regex = new RegExp(`{{ ${item} }}`, "g");
-      const result = inner;
-      return result.replace(regex, i);
+      const innerMatchesRe = /{{\s*([\w.\-]+)\s*}}/g
+      const replaced = inner.replace(innerMatchesRe, (match, varName) => {
+        const splittedVarname = varName.split('.');
+
+        varName = splittedVarname[0];
+        const varProps = splittedVarname.slice(1, splittedVarname.length);
+        if (context[iterable][idx][varProps] === undefined) {
+          return match;
+        }
+        if (varProps.length === 0) {
+          return context[iterable][idx];
+        }
+        return context[iterable][idx][varProps];
+      })
+      return replaced.replace(regex, i);
     }).join('');
   });
 
@@ -62,6 +75,29 @@ export const replaceContext = (content, context) => {
   return contextReplaced;
 }
 
+export const replaceConditionals = (content, context) => {
+  let contextReplaced = content.replace(/{% if (.+?) %}([\s\S]*?){% endif %}/g, (_match, condition, inner) => {
+    const atoms = condition.split('===').map(atom => atom.trim());
+    const expr = atoms.map(atom => {
+      let amended = atom;
+      if (!atom.trim().startsWith('\'')) {
+        if (context) {
+          amended = context[amended] ? `'${context[amended]}'` : false;
+        } else {
+          amended = false;
+        }
+      }
+      return amended;
+    });
+    if (expr.length === 1 && expr[0] || expr[0] === expr[1]) {
+      return inner
+    } else {
+      return '';
+    };
+
+  });
+  return contextReplaced;
+}
 
 export const replaceModifications = (content, modifications) => {
   const modificationsRegex = /{% modify (\w+) %}([\s\S]*?){% endmodify %}/g;
