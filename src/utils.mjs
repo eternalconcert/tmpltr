@@ -36,24 +36,26 @@ export const replaceBlocks = (content, blocks) => {
 export const replaceContext = (content, context) => {
 
   let contextReplaced = content.replace(/{% for (\w+) in (\w+) %}([\s\S]*?){% endfor %}/g, (_match, item, iterable, inner) => {
-    return context[iterable].map((i, idx) => {
-      const regex = new RegExp(`{{ ${item} }}`, "g");
-      const innerMatchesRe = /{{\s*([\w.\-]+)\s*}}/g
-      const replaced = inner.replace(innerMatchesRe, (match, varName) => {
-        const splittedVarname = varName.split('.');
+    if (context[iterable]) {
+      return context[iterable].map((i, idx) => {
+        const regex = new RegExp(`{{ ${item} }}`, "g");
+        const innerMatchesRe = /{{\s*([\w.\-]+)\s*}}/g
+        const replaced = inner.replace(innerMatchesRe, (match, varName) => {
+          const splittedVarname = varName.split('.');
 
-        varName = splittedVarname[0];
-        const varProps = splittedVarname.slice(1, splittedVarname.length);
-        if (context[iterable][idx][varProps] === undefined) {
-          return match;
-        }
-        if (varProps.length === 0) {
-          return context[iterable][idx];
-        }
-        return context[iterable][idx][varProps];
-      })
-      return replaced.replace(regex, i);
-    }).join('');
+          varName = splittedVarname[0];
+          const varProps = splittedVarname.slice(1, splittedVarname.length);
+          if (context[iterable][idx][varProps] === undefined) {
+            return match;
+          }
+          if (varProps.length === 0) {
+            return context[iterable][idx];
+          }
+          return context[iterable][idx][varProps];
+        })
+        return replaced.replace(regex, i);
+      }).join('');
+    }
   });
 
   contextReplaced = contextReplaced.replace(/{{\s*([\w.\-]+)\s*}}(?![^]*?{%\s*for\b[^]*?{%\s*endfor\s*%})/g, (match, varName) => {
@@ -76,28 +78,42 @@ export const replaceContext = (content, context) => {
 }
 
 export const replaceConditionals = (content, context) => {
-  let contextReplaced = content.replace(/{% if (.+?) %}([\s\S]*?){% endif %}/g, (_match, condition, inner) => {
-    const atoms = condition.split('===').map(atom => atom.trim());
-    const expr = atoms.map(atom => {
-      let amended = atom;
-      if (!atom.trim().startsWith('\'')) {
-        if (context) {
-          amended = context[amended] ? `'${context[amended]}'` : false;
-        } else {
-          amended = false;
-        }
-      }
-      return amended;
-    });
-    if (expr.length === 1 && expr[0] || expr[0] === expr[1]) {
-      return inner
-    } else {
-      return '';
-    };
+  // Helfer für verschachtelte Keys
+  const getNestedValue = (obj, path) => {
+    return path.split('.').reduce((acc, key) => {
+      return acc && acc[key] !== undefined ? acc[key] : undefined;
+    }, obj);
+  };
 
+  return content.replace(/{% if (.+?) %}([\s\S]*?){% endif %}/g, (_match, condition, inner) => {
+    const trimmedCondition = condition.trim();
+
+    // Vergleichsprüfung (a === b)
+    if (trimmedCondition.includes('===')) {
+      const [leftRaw, rightRaw] = trimmedCondition.split('===').map(s => s.trim());
+
+      const resolve = (atom) => {
+        if (/^'.*'$/.test(atom)) return atom.slice(1, -1); // String-Literal ohne Quotes
+        return getNestedValue(context, atom);
+      };
+
+      const left = resolve(leftRaw);
+      const right = resolve(rightRaw);
+
+      if (left !== undefined && right !== undefined && left === right) {
+        return inner;
+      }
+    } else {
+      // Existenzprüfung: z.B. {% if globals.username %}
+      const value = getNestedValue(context, trimmedCondition);
+      if (value) {
+        return inner;
+      }
+    }
+
+    return '';
   });
-  return contextReplaced;
-}
+};
 
 export const replaceModifications = (content, modifications) => {
   const modificationsRegex = /{% modify (\w+) %}([\s\S]*?){% endmodify %}/g;

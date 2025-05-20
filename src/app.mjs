@@ -12,25 +12,52 @@ import {
   replaceModifications,
 } from './utils.mjs';
 
+// const isProduction = process.env.NODE_ENV === 'production'; <- secure cookie stuff
+
 const getClientKeyFromClientSession = (request) => {
   return parseCookies(request)['tmpltr-session'] || '';
 }
 
 class Session {
-  data = {};
+  #data = {};
 
   setValue(key, value, request) {
     const clientKey = request.clientKey;
-    if (!this.data[clientKey]) {
-      this.data[clientKey] = {};
+    if (!this.#data[clientKey]) {
+      this.#data[clientKey] = {};
     }
-    this.data[clientKey][key] = value;
+    this.#data[clientKey][key] = value;
   }
 
   getValue(key, request) {
-    const clientKey = getClientKeyFromClientSession(request);
-    return this.data[clientKey][key];
+    const clientKey = request.clientKey;
+    return this.#data[clientKey]?.[key];
   }
+}
+
+function createProtectedSession() {
+  const session = new Session();
+
+  return new Proxy(session, {
+    set(_target, prop, _value) {
+      throw new Error(`Direktes Setzen von Property '${String(prop)}' ist nicht erlaubt. Benutze setValue().`);
+    },
+    get(target, prop) {
+      if (prop === 'setValue' || prop === 'getValue') {
+        return target[prop].bind(target);
+      }
+      if (typeof prop === 'string' && !(prop in target)) {
+        throw new Error(`Direkter Zugriff auf Property '${prop}' ist nicht erlaubt.`);
+      }
+      return target[prop];
+    },
+    deleteProperty() {
+      throw new Error('Löschen von Properties ist nicht erlaubt.');
+    },
+    defineProperty() {
+      throw new Error('Definition von neuen Properties ist nicht erlaubt.');
+    },
+  });
 }
 
 function parseCookies(req) {
@@ -55,7 +82,8 @@ export class App {
     this.templateDir = templateDir || 'templates';
     this.beforeRequestCallbacks = [];
     this.beforeResponseCallbacks = [];
-    this.session = new Session();
+    this.globals = {};
+    this.session = createProtectedSession();
   }
 
   staticPath = '/static/';
@@ -138,7 +166,7 @@ export class App {
     response.setHeader("Server", 'TMPLTR');
     response.setHeader("Content-Length", Buffer.byteLength(responseContent));
     response.setHeader("Content-Type", contentType);
-    response.setHeader("Set-Cookie", `tmpltr-session=${clientKey}; HttpOnly; Path=/; Max-Age=3600`);
+    response.setHeader("Set-Cookie", `tmpltr-session=${clientKey}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=1800`);
 
     this.beforeResponseCallbacks.forEach(async callback => await callback(request, response));
     if (response.statusCode === 200 && statusCode !== 200) {
@@ -148,7 +176,8 @@ export class App {
     return;
   }
 
-  renderTemplate = (fileName, context, modifications, _request, _response) => {
+  renderTemplate = (fileName, context = {}, modifications, _request, _response) => {
+    context.globals = this.globals;
     const regexExtends = /{% extends\s+([^\s]+)\s* %}/;
     const content = fs.readFileSync(`${this.templateDir}/${fileName}`, 'utf-8');
 
