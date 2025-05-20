@@ -102,10 +102,9 @@ export class App {
     this.routes[routePath] = callback;
   }
 
-  redirect = (target, response) => {
-    response.statusCode = 302;
-    response.setHeader('Location', target);
-  }
+  redirect = (url, status = 302) => {
+    return { status, content: url }
+  };
 
   requestListener = async (request, response) => {
     let clientKey = getClientKeyFromClientSession(request);
@@ -160,8 +159,14 @@ export class App {
     // Falls es eine Route gibt, sie ausführen (request.form ist jetzt verfügbar!)
     if (!statusCode && this.routes[pathname]) {
       responseContent = await this.routes[pathname](request, response);
-      contentType = "text/html";
-      statusCode = 200;
+      if (typeof responseContent === 'object' && [301, 302].includes(responseContent.status)) {
+        statusCode = responseContent.status;
+        response.setHeader("Location", responseContent.content);
+        responseContent = '';
+      } else {
+        contentType = "text/html";
+        statusCode = 200;
+      }
     }
     response.setHeader("Server", 'TMPLTR');
     response.setHeader("Content-Length", Buffer.byteLength(responseContent));
