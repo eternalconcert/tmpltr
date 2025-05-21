@@ -18,6 +18,13 @@ const getClientKeyFromClientSession = (request) => {
   return parseCookies(request)['tmpltr-session'] || '';
 }
 
+const getCookieConsent = (request) => {
+  if (request.consent === 'false') {
+    return false;
+  }
+  return parseCookies(request)['cookie-consent'] === 'true' || request.consent === 'true' || false;
+}
+
 class Session {
   #data = {};
 
@@ -122,6 +129,8 @@ export class App {
       pathname = `${pathname}/`;
     }
 
+    request.searchParams = parsedUrl.searchParams;
+
     let responseContent = '';
     let statusCode = 0;
     let contentType = types.plain;
@@ -171,7 +180,23 @@ export class App {
     response.setHeader("Server", 'TMPLTR');
     response.setHeader("Content-Length", Buffer.byteLength(responseContent));
     response.setHeader("Content-Type", contentType);
-    response.setHeader("Set-Cookie", `tmpltr-session=${clientKey}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=1800`);
+    const cookieConsent = getCookieConsent(request);
+
+    const existingCookies = parseCookies(request);
+    const cookies = [];
+
+    if ('cookie-consent' in existingCookies || cookieConsent) {
+      cookies.push(`cookie-consent=${cookieConsent}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${cookieConsent ? '1900' : '0'}`);
+    }
+    if ('tmpltr-session' in existingCookies || clientKey) {
+      cookies.push(`tmpltr-session=${clientKey}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${cookieConsent ? '1900' : '0'}`);
+    }
+
+    if (cookieConsent) {
+      this.session.setValue('cookie-consent', true, request);
+    }
+
+    response.setHeader('Set-Cookie', cookies);
 
     this.beforeResponseCallbacks.forEach(async callback => await callback(request, response));
     if (response.statusCode === 200 && statusCode !== 200) {
