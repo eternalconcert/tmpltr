@@ -97,6 +97,44 @@ export class App {
 
   routes = {};
 
+  extractParams(template, actualPath) {
+    const paramNames = [];
+    const regexPath = template.replace(/<([^>]+)>/g, (_, key) => {
+      paramNames.push(key);
+      return '([^/]+)';
+    });
+    const regex = new RegExp('^' + regexPath + '/?$');
+    const match = actualPath.match(regex);
+    if (!match) return null;
+
+    const values = match.slice(1);
+    return paramNames.reduce((acc, key, i) => {
+      acc[key] = values[i];
+      return acc;
+    }, {});
+  }
+
+  matchRoute(path) {
+    for (const template in this.routes) {
+      const paramNames = [];
+      const regexPath = template.replace(/<([^>]+)>/g, (_, key) => {
+        paramNames.push(key);
+        return '([^/]+)';
+      });
+      const regex = new RegExp('^' + regexPath + '/?$');
+      const match = path.match(regex);
+      if (match) {
+        const values = match.slice(1);
+        const params = paramNames.reduce((acc, key, i) => {
+          acc[key] = values[i];
+          return acc;
+        }, {});
+        return { handler: this.routes[template], params };
+      }
+    }
+    return null; // Kein Match gefunden
+  }
+
   beforeRequest = (callback) => {
     this.beforeRequestCallbacks.push(callback);
   };
@@ -110,8 +148,21 @@ export class App {
   }
 
   redirect = (url, status = 302) => {
-    return { status, content: url }
+    return [{ status, content: url }]
   };
+
+  sendFileFromDir = (path) => {
+    let contentType = '';
+    let statusCode = '';
+    let responseContent = '';
+
+    const fileContent = fs.readFileSync(path);
+    const extension = extname(path).slice(1);
+    contentType = extension ? getContentType(extension) : types.html;
+    statusCode = 200;
+    responseContent = fileContent;
+    return [responseContent, statusCode, contentType];
+  }
 
   requestListener = async (request, response) => {
     let clientKey = getClientKeyFromClientSession(request);
@@ -134,6 +185,7 @@ export class App {
     let responseContent = '';
     let statusCode = 0;
     let contentType = types.plain;
+    const matchedRoute = this.matchRoute(pathname);
     if (pathname.startsWith(this.staticPath)) {
       const fileName = pathname.replace(this.staticPath, '');
       try {
@@ -147,34 +199,93 @@ export class App {
         statusCode = 404;
         responseContent = 'Not found';
       }
-    }
-    else if (!this.routes[pathname]) {
+    } else if (!matchedRoute) {
       statusCode = 404;
       responseContent = 'Not found';
     }
 
-    // Nur bei POST: Body einlesen und request.form setzen
     if (request.method === 'POST') {
       await new Promise((resolve) => {
-        let body = '';
-        request.on('data', chunk => body += chunk.toString());
+        let chunks = [];
+        request.on('data', chunk => chunks.push(chunk));
         request.on('end', () => {
-          request.form = new URLSearchParams(body);
+          const contentType = request.headers['content-type'] || '';
+          const bodyBuffer = Buffer.concat(chunks);
+
+          // 1. x-www-form-urlencoded
+          if (contentType.startsWith('application/x-www-form-urlencoded')) {
+            const body = bodyBuffer.toString();
+            request.form = new URLSearchParams(body);
+            request.files = {};
+            return resolve();
+          }
+
+          // 2. multipart/form-data
+          if (contentType.startsWith('multipart/form-data')) {
+            const boundaryMatch = contentType.match(/boundary=(.+)$/);
+            if (!boundaryMatch) {
+              request.form = {};
+              request.files = {};
+              return resolve();
+            }
+
+            const boundary = '--' + boundaryMatch[1];
+            const body = bodyBuffer.toString('binary');
+            const parts = body.split(boundary).slice(1, -1);
+
+            request.form = {};
+            request.files = {};
+
+            for (const part of parts) {
+              const [rawHeaders, ...rest] = part.split('\r\n\r\n');
+              if (!rawHeaders || rest.length === 0) continue;
+
+              const bodyPart = rest.join('\r\n\r\n').replace(/\r\n$/, ''); // remove trailing line break
+              const nameMatch = rawHeaders.match(/name="([^"]+)"/);
+              const filenameMatch = rawHeaders.match(/filename="([^"]+)"/);
+              const name = nameMatch && nameMatch[1];
+
+              if (!name) continue;
+
+              if (filenameMatch && filenameMatch[1]) {
+                // Datei-Upload
+                const filename = filenameMatch[1];
+                const contentTypeMatch = rawHeaders.match(/Content-Type: ([^\r\n]+)/);
+                const fileContentType = contentTypeMatch ? contentTypeMatch[1] : 'application/octet-stream';
+                const fileBuffer = Buffer.from(bodyPart, 'binary');
+
+                request.files[name] = {
+                  filename,
+                  contentType: fileContentType,
+                  data: fileBuffer
+                };
+              } else {
+                // Normales Textfeld
+                request.form[name] = bodyPart.trim();
+              }
+            }
+
+            return resolve();
+          }
+
+          // Fallback
+          request.form = {};
+          request.files = {};
           resolve();
         });
       });
     }
 
     // Falls es eine Route gibt, sie ausführen (request.form ist jetzt verfügbar!)
-    if (!statusCode && this.routes[pathname]) {
-      responseContent = await this.routes[pathname](request, response);
+    if (!statusCode && matchedRoute) {
+      const [res, status, mimeType] = await matchedRoute.handler(request, response, matchedRoute.params);
+      responseContent = res;
+      statusCode = statusCode || 200;
+      contentType =  mimeType || "text/html";
       if (typeof responseContent === 'object' && [301, 302].includes(responseContent.status)) {
         statusCode = responseContent.status;
         response.setHeader("Location", responseContent.content);
         responseContent = '';
-      } else {
-        contentType = "text/html";
-        statusCode = 200;
       }
     }
     response.setHeader("Server", 'TMPLTR');
@@ -233,7 +344,7 @@ export class App {
       result = replaceModifications(result, modifications);
     }
 
-    return result;
+    return [result];
   }
 
   server = http.createServer(this.requestListener)
