@@ -171,155 +171,166 @@ export class App {
     return [responseContent, statusCode, contentType];
   }
 
-  requestListener = async (request, response) => {
-    let clientKey = getClientKeyFromClientSession(request);
-    if (!clientKey) {
-      clientKey = uuidv4();
-    }
-    request.clientKey = clientKey;
+  processRequest = async (request, response) => {
+      let clientKey = getClientKeyFromClientSession(request);
+      if (!clientKey) {
+        clientKey = uuidv4();
+      }
+      request.clientKey = clientKey;
 
-    this.beforeRequestCallbacks.forEach(async callback => await callback(request, response));
+      this.beforeRequestCallbacks.forEach(async callback => await callback(request, response));
 
-    const parsedUrl = new URL(request.url, `http://${request.headers.host}`);
-    let pathname = parsedUrl.pathname;
+      const parsedUrl = new URL(request.url, `http://${request.headers.host}`);
+      let pathname = parsedUrl.pathname;
 
-    if (!pathname.endsWith('/') && !pathname.startsWith(this.staticPath)) {
-      pathname = `${pathname}/`;
-    }
+      if (!pathname.endsWith('/') && !pathname.startsWith(this.staticPath)) {
+        pathname = `${pathname}/`;
+      }
 
-    request.searchParams = parsedUrl.searchParams;
+      request.searchParams = parsedUrl.searchParams;
 
-    let responseContent = '';
-    let statusCode = 0;
-    let contentType = types.plain;
-    const matchedRoute = this.matchRoute(pathname);
-    if (pathname.startsWith(this.staticPath)) {
-      const fileName = pathname.replace(this.staticPath, '');
-      try {
-        const fileContent = fs.readFileSync(process.cwd() + this.staticPath + fileName);
-        const extension = extname(pathname).slice(1);
-        contentType = extension ? getContentType(extension) : types.html;
-        statusCode = 200;
-        responseContent = fileContent;
-      } catch {
-        contentType = types.plain;
+      let responseContent = '';
+      let statusCode = 0;
+      let contentType = types.plain;
+      const matchedRoute = this.matchRoute(pathname);
+      if (pathname.startsWith(this.staticPath)) {
+        const fileName = pathname.replace(this.staticPath, '');
+        try {
+          const fileContent = fs.readFileSync(process.cwd() + this.staticPath + fileName);
+          const extension = extname(pathname).slice(1);
+          contentType = extension ? getContentType(extension) : types.html;
+          statusCode = 200;
+          responseContent = fileContent;
+        } catch {
+          contentType = types.plain;
+          statusCode = 404;
+          responseContent = 'Not found';
+        }
+      } else if (!matchedRoute) {
         statusCode = 404;
         responseContent = 'Not found';
       }
-    } else if (!matchedRoute) {
-      statusCode = 404;
-      responseContent = 'Not found';
-    }
 
-    if (request.method === 'POST') {
-      await new Promise((resolve) => {
-        let chunks = [];
-        request.on('data', chunk => chunks.push(chunk));
-        request.on('end', () => {
-          const contentType = request.headers['content-type'] || '';
-          const bodyBuffer = Buffer.concat(chunks);
+      if (request.method === 'POST') {
+        await new Promise((resolve) => {
+          let chunks = [];
+          request.on('data', chunk => chunks.push(chunk));
+          request.on('end', () => {
+            const contentType = request.headers['content-type'] || '';
+            const bodyBuffer = Buffer.concat(chunks);
 
-          // 1. x-www-form-urlencoded
-          if (contentType.startsWith('application/x-www-form-urlencoded')) {
-            const body = bodyBuffer.toString();
-            request.form = new URLSearchParams(body);
-            request.files = {};
-            return resolve();
-          }
-
-          // 2. multipart/form-data
-          if (contentType.startsWith('multipart/form-data')) {
-            const boundaryMatch = contentType.match(/boundary=(.+)$/);
-            if (!boundaryMatch) {
-              request.form = {};
+            // 1. x-www-form-urlencoded
+            if (contentType.startsWith('application/x-www-form-urlencoded')) {
+              const body = bodyBuffer.toString();
+              request.form = new URLSearchParams(body);
               request.files = {};
               return resolve();
             }
 
-            const boundary = '--' + boundaryMatch[1];
-            const body = bodyBuffer.toString('binary');
-            const parts = body.split(boundary).slice(1, -1);
+            // 2. multipart/form-data
+            if (contentType.startsWith('multipart/form-data')) {
+              const boundaryMatch = contentType.match(/boundary=(.+)$/);
+              if (!boundaryMatch) {
+                request.form = {};
+                request.files = {};
+                return resolve();
+              }
 
+              const boundary = '--' + boundaryMatch[1];
+              const body = bodyBuffer.toString('binary');
+              const parts = body.split(boundary).slice(1, -1);
+
+              request.form = {};
+              request.files = {};
+
+              for (const part of parts) {
+                const [rawHeaders, ...rest] = part.split('\r\n\r\n');
+                if (!rawHeaders || rest.length === 0) continue;
+
+                const partBodyRaw = rest.join('\r\n\r\n').replace(/\r\n$/, '');
+                const partBodyBuffer = Buffer.from(partBodyRaw, 'binary');
+
+                const nameMatch = rawHeaders.match(/name="([^"]+)"/);
+                const filenameMatch = rawHeaders.match(/filename="([^"]+)"/);
+                const name = nameMatch && nameMatch[1];
+
+                if (!name) continue;
+
+                if (filenameMatch && filenameMatch[1]) {
+                  const filename = filenameMatch[1];
+                  const contentTypeMatch = rawHeaders.match(/Content-Type: ([^\r\n]+)/);
+                  const fileContentType = contentTypeMatch ? contentTypeMatch[1] : 'application/octet-stream';
+
+                  request.files[name] = {
+                    filename,
+                    contentType: fileContentType,
+                    data: partBodyBuffer
+                  };
+                } else {
+                  request.form[name] = partBodyBuffer.toString('utf-8').trim();
+                }
+              }
+              return resolve();
+            }
+
+            // Fallback
             request.form = {};
             request.files = {};
-
-            for (const part of parts) {
-              const [rawHeaders, ...rest] = part.split('\r\n\r\n');
-              if (!rawHeaders || rest.length === 0) continue;
-
-              const partBodyRaw = rest.join('\r\n\r\n').replace(/\r\n$/, '');
-              const partBodyBuffer = Buffer.from(partBodyRaw, 'binary');
-
-              const nameMatch = rawHeaders.match(/name="([^"]+)"/);
-              const filenameMatch = rawHeaders.match(/filename="([^"]+)"/);
-              const name = nameMatch && nameMatch[1];
-
-              if (!name) continue;
-
-              if (filenameMatch && filenameMatch[1]) {
-                const filename = filenameMatch[1];
-                const contentTypeMatch = rawHeaders.match(/Content-Type: ([^\r\n]+)/);
-                const fileContentType = contentTypeMatch ? contentTypeMatch[1] : 'application/octet-stream';
-
-                request.files[name] = {
-                  filename,
-                  contentType: fileContentType,
-                  data: partBodyBuffer
-                };
-              } else {
-                request.form[name] = partBodyBuffer.toString('utf-8').trim();
-              }
-            }
-            return resolve();
-          }
-
-          // Fallback
-          request.form = {};
-          request.files = {};
-          resolve();
+            resolve();
+          });
         });
-      });
-    }
-
-    // Falls es eine Route gibt, sie ausführen (request.form ist jetzt verfügbar!)
-    if (!statusCode && matchedRoute) {
-      const [res, _status, mimeType] = await matchedRoute.handler(request, response, matchedRoute.params);
-      responseContent = res;
-      statusCode = statusCode || 200;
-      contentType =  mimeType || "text/html";
-      if (typeof responseContent === 'object' && [301, 302].includes(responseContent.status)) {
-        statusCode = responseContent.status;
-        response.setHeader("Location", responseContent.content);
-        responseContent = '';
       }
-    }
-    response.setHeader("Server", 'TMPLTR');
-    response.setHeader("Content-Length", Buffer.byteLength(responseContent));
-    response.setHeader("Content-Type", contentType);
-    const cookieConsent = getCookieConsent(request);
 
-    const existingCookies = parseCookies(request);
-    const cookies = [];
+      // Falls es eine Route gibt, sie ausführen (request.form ist jetzt verfügbar!)
+      if (!statusCode && matchedRoute) {
+        const [res, _status, mimeType] = await matchedRoute.handler(request, response, matchedRoute.params);
+        responseContent = res;
+        statusCode = statusCode || 200;
+        contentType =  mimeType || "text/html";
+        if (typeof responseContent === 'object' && [301, 302].includes(responseContent.status)) {
+          statusCode = responseContent.status;
+          response.setHeader("Location", responseContent.content);
+          responseContent = '';
+        }
+      }
+      response.setHeader("Server", 'TMPLTR');
+      response.setHeader("Content-Length", Buffer.byteLength(responseContent));
+      response.setHeader("Content-Type", contentType);
+      const cookieConsent = getCookieConsent(request);
 
-    if ('cookie-consent' in existingCookies || cookieConsent) {
-      cookies.push(`cookie-consent=${cookieConsent}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${cookieConsent ? '1900' : '0'}`);
-    }
-    if ('tmpltr-session' in existingCookies || clientKey) {
-      cookies.push(`tmpltr-session=${clientKey}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${cookieConsent ? '1900' : '0'}`);
-    }
+      const existingCookies = parseCookies(request);
+      const cookies = [];
 
-    if (cookieConsent) {
-      this.session.setValue('cookie-consent', true, request);
-    }
+      if ('cookie-consent' in existingCookies || cookieConsent) {
+        cookies.push(`cookie-consent=${cookieConsent}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${cookieConsent ? '1900' : '0'}`);
+      }
+      if ('tmpltr-session' in existingCookies || clientKey) {
+        cookies.push(`tmpltr-session=${clientKey}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${cookieConsent ? '1900' : '0'}`);
+      }
 
-    response.setHeader('Set-Cookie', cookies);
+      if (cookieConsent) {
+        this.session.setValue('cookie-consent', true, request);
+      }
 
-    this.beforeResponseCallbacks.forEach(async callback => await callback(request, response));
-    if (response.statusCode === 200 && statusCode !== 200) {
-      response.writeHead(statusCode);
+      response.setHeader('Set-Cookie', cookies);
+
+      this.beforeResponseCallbacks.forEach(async callback => await callback(request, response));
+      if (response.statusCode === 200 && statusCode !== 200) {
+        response.writeHead(statusCode);
+      }
+      response.end(responseContent);
+      return;
+  }
+  
+  requestListener = async (request, response) => {
+    try {
+      await this.processRequest(request, response);
+    } catch (err) {
+      console.error('Error:', err);
+      response.writeHead(500, { 'Content-Type': 'text/plain' });
+      response.end('Internal Server Error');
+      return;
     }
-    response.end(responseContent);
-    return;
   }
 
   renderTemplate = (fileName, context = {}, modifications, _request, _response) => {
@@ -355,7 +366,7 @@ export class App {
   server = http.createServer(this.requestListener)
 
   serve() {
-    this.server.listen(this.port, this.host, () => {
+        this.server.listen(this.port, this.host, () => {
       console.log(`Server running at http://${this.host}:${this.port}/`);
     });
   }
