@@ -156,11 +156,18 @@ export class App {
     let statusCode = '';
     let responseContent = '';
 
-    const fileContent = fs.readFileSync(path);
-    const extension = extname(path).slice(1);
-    contentType = extension ? getContentType(extension) : types.html;
-    statusCode = 200;
-    responseContent = fileContent;
+    try {
+      const decodedPath = decodeURIComponent(path);
+      const fileContent = fs.readFileSync(decodedPath);
+      const extension = extname(decodedPath).slice(1);
+      contentType = extension ? getContentType(extension) : types.html;
+      statusCode = 200;
+      responseContent = fileContent;
+    } catch (err) {
+      contentType = types.plain;
+      statusCode = 404;
+      responseContent = 'File not found';
+    }
     return [responseContent, statusCode, contentType];
   }
 

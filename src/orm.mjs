@@ -39,17 +39,39 @@ export class DbObject {
 
   static getByFilter = function (filter, config = {}) {
     // filter: { firstName: 'Jack', lastName: 'Shephard' }
-    let conditions = Object.keys(filter).map(field => `${field} = ?`).join(' AND ');
+    let conditions = Object.keys(filter).map(field => {
+      if (field.split('__').length > 1) {
+        const splitted = field.split('__');
+        const fieldName = splitted[0];
+        const operator = splitted[1];
+        if (operator === 'lte') {
+          return `${fieldName} <= ?`
+        } else if (operator === 'gte') {
+          return `${fieldName} >= ?`
+        } else if (operator === 'lt') {
+          return `${fieldName} < ?`
+        } else if (operator === 'gt') {
+          return `${fieldName} > ?`
+        } else if (operator === 'like') {
+          return `${fieldName} LIKE ?`
+        } else if (operator === 'not') {
+          return `${fieldName} NOT LIKE ?`
+        } else if (operator === 'in') {
+          return `${fieldName} IN (${filter[field].map(() => '?').join(', ')})`
+        } else if (operator === 'notin') {
+          return `${fieldName} NOT IN (${filter[field].map(() => '?').join(', ')})`
+        }
+      }
+      return `${field} = ?`
+    }).join(' AND ');
     let values = Object.values(filter);
     if (filter && typeof filter === 'object' && Object.keys(filter).length === 0) {
       conditions = '1 = 1';
       values = [];
     }
     const { extremum, orderBy, sortOrder } = config;
-
     let orderPart = ` ORDER BY ${orderBy ? orderBy : 'id'}`
-    let direction = sortOrder === 'DESC' ? ' DESC' : ' ASC';
-
+    let direction = (sortOrder && sortOrder.toUpperCase() === 'DESC') ? ' DESC' : ' ASC';
     let limitPart = ''
     if (extremum) {
       limitPart = ' LIMIT 1'
@@ -57,6 +79,7 @@ export class DbObject {
         direction = ' DESC';
       }
     }
+    console.log(`SELECT ${this.fieldNames.join(', ')} FROM ${this.tableName} WHERE ${conditions}${orderPart}${direction}${limitPart}`, ...values);
     const query = this.database.prepare(`SELECT ${this.fieldNames.join(', ')} FROM ${this.tableName} WHERE ${conditions}${orderPart}${direction}${limitPart}`);
     const result = query.all(...values).map(res => new this(res));
     return extremum ? result[0] : result;

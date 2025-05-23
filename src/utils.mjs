@@ -81,7 +81,13 @@ export const replaceConditionals = (content, context) => {
   // Helfer für verschachtelte Keys
   const getNestedValue = (obj, path) => {
     return path.split('.').reduce((acc, key) => {
-      return acc && acc[key] !== undefined ? acc[key] : undefined;
+      if (Array.isArray(acc[key]) && acc[key].length === 0) {
+        return false;
+      }
+      if (Array.isArray(acc[key]) && acc[key].length > 0) {
+        return true;
+      }
+      return acc && acc[key] !== undefined ? acc[key] : false;
     }, obj);
   };
 
