@@ -78,47 +78,74 @@ export const replaceContext = (content, context) => {
 }
 
 export const replaceConditionals = (content, context) => {
-  // Helfer für verschachtelte Keys
+  // Helper für verschachtelte Keys
   const getNestedValue = (obj, path) => {
     return path.split('.').reduce((acc, key) => {
-      if (Array.isArray(acc[key]) && acc[key].length === 0) {
-        return false;
-      }
-      if (Array.isArray(acc[key]) && acc[key].length > 0) {
-        return true;
-      }
+      if (Array.isArray(acc?.[key]) && acc[key].length === 0) return false;
+      if (Array.isArray(acc?.[key]) && acc[key].length > 0) return true;
       return acc && acc[key] !== undefined ? acc[key] : false;
     }, obj);
   };
 
-  return content.replace(/{% if (.+?) %}([\s\S]*?){% endif %}/g, (_match, condition, inner) => {
-    const trimmedCondition = condition.trim();
-
-    // Vergleichsprüfung (a === b)
-    if (trimmedCondition.includes('===')) {
-      const [leftRaw, rightRaw] = trimmedCondition.split('===').map(s => s.trim());
-
-      const resolve = (atom) => {
-        if (/^'.*'$/.test(atom)) return atom.slice(1, -1); // String-Literal ohne Quotes
-        return getNestedValue(context, atom);
-      };
-
-      const left = resolve(leftRaw);
-      const right = resolve(rightRaw);
-
-      if (left !== undefined && right !== undefined && left === right) {
-        return inner;
+  // Rekursive Funktion zum Parsen von verschachtelten Ifs
+  const parseIfBlocks = (input) => {
+    let output = '';
+    let pos = 0;
+    while (pos < input.length) {
+      const ifStart = input.indexOf('{% if', pos);
+      if (ifStart === -1) {
+        output += input.slice(pos);
+        break;
       }
-    } else {
-      // Existenzprüfung: z.B. {% if globals.username %}
-      const value = getNestedValue(context, trimmedCondition);
-      if (value) {
-        return inner;
+      output += input.slice(pos, ifStart);
+      const condStart = ifStart + 5;
+      const condEnd = input.indexOf('%}', condStart);
+      const condition = input.slice(condStart, condEnd).trim();
+
+      // Finde das zugehörige endif (verschachtelt!)
+      let innerStart = condEnd + 2;
+      let depth = 1;
+      let searchPos = innerStart;
+      while (depth > 0) {
+        const nextIf = input.indexOf('{% if', searchPos);
+        const nextEndif = input.indexOf('{% endif %}', searchPos);
+        if (nextEndif === -1) break;
+        if (nextIf !== -1 && nextIf < nextEndif) {
+          depth++;
+          searchPos = nextIf + 5;
+        } else {
+          depth--;
+          searchPos = nextEndif + 11;
+        }
       }
+      const innerEnd = searchPos - 11;
+      const innerContent = input.slice(innerStart, innerEnd);
+
+      // Vergleichsprüfung (a === b)
+      let show = false;
+      if (condition.includes('===')) {
+        const [leftRaw, rightRaw] = condition.split('===').map(s => s.trim());
+        const resolve = (atom) => {
+          if (/^'.*'$/.test(atom)) return atom.slice(1, -1);
+          return getNestedValue(context, atom);
+        };
+        const left = resolve(leftRaw);
+        const right = resolve(rightRaw);
+        show = left !== undefined && right !== undefined && left === right;
+      } else {
+        const value = getNestedValue(context, condition);
+        show = !!value;
+      }
+
+      if (show) {
+        output += parseIfBlocks(innerContent);
+      }
+      pos = searchPos;
     }
+    return output;
+  };
 
-    return '';
-  });
+  return parseIfBlocks(content);
 };
 
 export const replaceModifications = (content, modifications) => {
