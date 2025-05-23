@@ -247,7 +247,9 @@ export class App {
               const [rawHeaders, ...rest] = part.split('\r\n\r\n');
               if (!rawHeaders || rest.length === 0) continue;
 
-              const bodyPart = rest.join('\r\n\r\n').replace(/\r\n$/, ''); // remove trailing line break
+              const partBodyRaw = rest.join('\r\n\r\n').replace(/\r\n$/, '');
+              const partBodyBuffer = Buffer.from(partBodyRaw, 'binary');
+
               const nameMatch = rawHeaders.match(/name="([^"]+)"/);
               const filenameMatch = rawHeaders.match(/filename="([^"]+)"/);
               const name = nameMatch && nameMatch[1];
@@ -255,23 +257,19 @@ export class App {
               if (!name) continue;
 
               if (filenameMatch && filenameMatch[1]) {
-                // Datei-Upload
                 const filename = filenameMatch[1];
                 const contentTypeMatch = rawHeaders.match(/Content-Type: ([^\r\n]+)/);
                 const fileContentType = contentTypeMatch ? contentTypeMatch[1] : 'application/octet-stream';
-                const fileBuffer = Buffer.from(bodyPart, 'binary');
 
                 request.files[name] = {
                   filename,
                   contentType: fileContentType,
-                  data: fileBuffer
+                  data: partBodyBuffer
                 };
               } else {
-                // Normales Textfeld
-                request.form[name] = bodyPart.trim();
+                request.form[name] = partBodyBuffer.toString('utf-8').trim();
               }
             }
-
             return resolve();
           }
 
@@ -285,7 +283,7 @@ export class App {
 
     // Falls es eine Route gibt, sie ausführen (request.form ist jetzt verfügbar!)
     if (!statusCode && matchedRoute) {
-      const [res, status, mimeType] = await matchedRoute.handler(request, response, matchedRoute.params);
+      const [res, _status, mimeType] = await matchedRoute.handler(request, response, matchedRoute.params);
       responseContent = res;
       statusCode = statusCode || 200;
       contentType =  mimeType || "text/html";

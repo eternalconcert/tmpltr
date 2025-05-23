@@ -79,7 +79,6 @@ export class DbObject {
         direction = ' DESC';
       }
     }
-    console.log(`SELECT ${this.fieldNames.join(', ')} FROM ${this.tableName} WHERE ${conditions}${orderPart}${direction}${limitPart}`, ...values);
     const query = this.database.prepare(`SELECT ${this.fieldNames.join(', ')} FROM ${this.tableName} WHERE ${conditions}${orderPart}${direction}${limitPart}`);
     const result = query.all(...values).map(res => new this(res));
     return extremum ? result[0] : result;
