@@ -155,7 +155,7 @@ export class App {
 
   send404(context = {}) {
     let content = 'File not found';
-    if (!this.statusPages[404]) {
+    if (this.statusPages[404]) {
       [content] = this.renderTemplate(this.statusPages[404], context);
     }
     return [content, 404, 'text/html'];
