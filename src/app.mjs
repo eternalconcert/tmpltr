@@ -99,10 +99,6 @@ export class App {
 
   statusPages = {};
 
-  setStatusPage(status, template) {
-    this.statusPages[status] = template;
-  }
-
   extractParams(template, actualPath) {
     const paramNames = [];
     const regexPath = template.replace(/<([^>]+)>/g, (_, key) => {
@@ -158,7 +154,10 @@ export class App {
   };
 
   send404(context = {}) {
-    const [content] = this.renderTemplate(this.statusPages[404], context);
+    let content = 'File not found';
+    if (!this.statusPages[404]) {
+      [content] = this.renderTemplate(this.statusPages[404], context);
+    }
     return [content, 404, 'text/html'];
   }
 
