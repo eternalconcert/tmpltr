@@ -97,6 +97,12 @@ export class App {
 
   routes = {};
 
+  statusPages = {};
+
+  setStatusPage(status, template) {
+    this.statusPages[status] = template;
+  }
+
   extractParams(template, actualPath) {
     const paramNames = [];
     const regexPath = template.replace(/<([^>]+)>/g, (_, key) => {
@@ -148,8 +154,13 @@ export class App {
   }
 
   redirect = (url, status = 302) => {
-    return [{ status, content: url }]
+    return ['', status, 'text/html', { Location: url }];
   };
+
+  send404(context = {}) {
+    const [content] = this.renderTemplate(this.statusPages[404], context);
+    return [content, 404, 'text/html'];
+  }
 
   sendFileFromDir = (path) => {
     let contentType = '';
@@ -204,11 +215,16 @@ export class App {
         } catch {
           contentType = types.plain;
           statusCode = 404;
-          responseContent = 'Not found';
+          responseContent = 'File not found';
         }
       } else if (!matchedRoute) {
         statusCode = 404;
-        responseContent = 'Not found';
+        if (this.statusPages[404]) {
+          responseContent = this.renderTemplate(this.statusPages[404], { slug: pathname })[0];
+          contentType = types.html;
+        } else {
+          responseContent = 'File not found';
+        }
       }
 
       if (request.method === 'POST') {
@@ -283,14 +299,18 @@ export class App {
 
       // Falls es eine Route gibt, sie ausführen (request.form ist jetzt verfügbar!)
       if (!statusCode && matchedRoute) {
-        const [res, _status, mimeType] = await matchedRoute.handler(request, response, matchedRoute.params);
-        responseContent = res;
-        statusCode = statusCode || 200;
-        contentType =  mimeType || "text/html";
-        if (typeof responseContent === 'object' && [301, 302].includes(responseContent.status)) {
-          statusCode = responseContent.status;
-          response.setHeader("Location", responseContent.content);
-          responseContent = '';
+        const result = await matchedRoute.handler(request, response, matchedRoute.params);
+
+        // result kann [content, status, contentType, headers] sein
+        let resArr = Array.isArray(result) ? result : [result];
+        responseContent = resArr[0];
+        statusCode = resArr[1] || 200;
+        contentType = resArr[2] || "text/html";
+        const extraHeaders = resArr[3] || {};
+
+        // Setze zusätzliche Header (z.B. für Redirect)
+        for (const [key, value] of Object.entries(extraHeaders)) {
+          response.setHeader(key, value);
         }
       }
       response.setHeader("Server", 'TMPLTR');
@@ -318,6 +338,9 @@ export class App {
       if (response.statusCode === 200 && statusCode !== 200) {
         response.writeHead(statusCode);
       }
+      if (typeof responseContent !== 'string' && !Buffer.isBuffer(responseContent)) {
+        responseContent = String(responseContent ?? '');
+      }
       response.end(responseContent);
       return;
   }
@@ -335,32 +358,34 @@ export class App {
 
   renderTemplate = (fileName, context = {}, modifications, _request, _response) => {
     context.globals = this.globals;
-    const regexExtends = /{% extends\s+([^\s]+)\s* %}/;
-    const content = fs.readFileSync(`${this.templateDir}/${fileName}`, 'utf-8');
+    const regexExtends = /{% extends\s+([^\s]+)\s*%}/;
+    let content = fs.readFileSync(`${this.templateDir}/${fileName}`, 'utf-8');
+
+    let base = '';
+    let blocks = {};
 
     const match = content.match(regexExtends);
-    let base = '';
     if (match && match[1]) {
+      // Child-Template: Blöcke extrahieren und in Base einsetzen
+      blocks = extractBlocksTemplate(content);
       base = fs.readFileSync(`${this.templateDir}/${match[1]}`, 'utf-8');
+      content = replaceBlocks(base, blocks);
+    } else {
+      // Kein extends: Blöcke direkt extrahieren
+      content = content;
     }
 
-    let result = content.replace(regexExtends, '');
-    const blocks = extractBlocksTemplate(result);
-    if (base) {
-      result = replaceBlocks(base, blocks);
-    }
-
-    result = replaceConditionals(result, context);
+    content = replaceConditionals(content, context);
 
     if (context) {
-      result = replaceContext(result, context);
+      content = replaceContext(content, context);
     }
 
     if (modifications) {
-      result = replaceModifications(result, modifications);
+      content = replaceModifications(content, modifications);
     }
 
-    return [result];
+    return [content];
   }
 
   server = http.createServer(this.requestListener)
