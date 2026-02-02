@@ -8,6 +8,7 @@ stages:
       . ~/.nvm/nvm.sh
       nvm install 23
       nvm use 23
+      npm install
       node --test
   - name: image
     run: |
