@@ -89,18 +89,13 @@ export class DbObject {
   }
 
   static create = function (item) {
-    let fieldNames = this.fieldNames;
     let props = Object.keys(item);
     if (!item['id']) {
-      fieldNames = this.fieldNames.slice(0, -1);
       props = props.filter(prop => prop !== 'id');
     }
-    const query = `INSERT INTO ${this.tableName} (${props.join(', ')}) VALUES (${fieldNames.map(() => '?').join(', ')})`;
+    const query = `INSERT INTO ${this.tableName} (${props.join(', ')}) VALUES (${props.map(() => '?').join(', ')})`;
     const prepared = this.database.prepare(query);
-    let objectValues = Object.values(item);
-    if (!item['id']) {
-      objectValues = objectValues.slice(1);
-    }
+    const objectValues = props.map(prop => item[prop]);
     const lastId = prepared.run(...objectValues).lastInsertRowid;
     return this.getByFilter({ id: lastId })[0];
   }
