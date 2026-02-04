@@ -182,7 +182,25 @@ export class App {
   }
 
   processRequest = async (request, response) => {
-      let clientKey = getClientKeyFromClientSession(request);
+    const responseContext = {
+      status: undefined,
+      contentType: types.html,
+      headers: {},
+      body: null,
+
+      setStatus(code) {
+        this.status = code;
+        return this;
+      },
+
+      addHeader(key, value) {
+        this.headers[key] = value;
+        return this;
+      },
+    };
+
+
+    let clientKey = getClientKeyFromClientSession(request);
       if (!clientKey) {
         clientKey = uuidv4();
       }
@@ -298,12 +316,12 @@ export class App {
 
       // Falls es eine Route gibt, sie ausführen (request.form ist jetzt verfügbar!)
       if (!statusCode && matchedRoute) {
-        const result = await matchedRoute.handler(request, response, matchedRoute.params);
+        const result = await matchedRoute.handler(request, responseContext, matchedRoute.params);
 
         // result kann [content, status, contentType, headers] sein
         let resArr = Array.isArray(result) ? result : [result];
         responseContent = resArr[0];
-        statusCode = resArr[1] || 200;
+        statusCode = responseContext.status ? responseContext.status : resArr[1] || 200;
         contentType = resArr[2] || "text/html";
         const extraHeaders = resArr[3] || {};
 
@@ -315,6 +333,9 @@ export class App {
       response.setHeader("Server", 'TMPLTR');
       response.setHeader("Content-Length", Buffer.byteLength(responseContent));
       response.setHeader("Content-Type", contentType);
+
+      Object.entries(responseContext.headers).forEach((item) => response.setHeader(item[0], item[1]));
+
       const cookieConsent = getCookieConsent(request);
 
       const existingCookies = parseCookies(request);
@@ -343,7 +364,7 @@ export class App {
       response.end(responseContent);
       return;
   }
-  
+
   requestListener = async (request, response) => {
     try {
       await this.processRequest(request, response);
