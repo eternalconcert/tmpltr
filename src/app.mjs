@@ -238,6 +238,7 @@ export class App {
           const fileContent = fs.readFileSync(process.cwd() + this.staticPath + fileName);
           const extension = extname(pathname).slice(1);
           contentType = extension ? getContentType(extension) : types.html;
+          responseContext.setContentType(contentType);
           statusCode = 200;
           responseContent = fileContent;
         } catch {
