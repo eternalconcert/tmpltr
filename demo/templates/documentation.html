@@ -1,9 +1,145 @@
 {% extends base.html %}
 {% block title %}Documentation{% endblock %}
 {% block body %}
-  <h2>Documentation</span></h2>
-  <h3>Api</h3>
+  <h2>Documentation</h2>
+  <h3>API</h3>
+
+  <h4>Overview</h4>
   <p>
-    Coming soon.
+    This page documents the public API of the core runtime and ORM used by the demo application. The example server implementation is <a href="/static/test.txt">server.mjs</a> (example only). Primary implementations to integrate with are <a href="/src/app.mjs">src/app.mjs</a> and <a href="/src/orm.mjs">src/orm.mjs</a>.
   </p>
+
+  <h4>App (src/app.mjs)</h4>
+  <p>
+    `App` is a lightweight HTTP application class that provides routing, template rendering and request/response helpers.
+  </p>
+
+  <ul>
+    <li><strong>Constructor:</strong>
+      <pre class="codeblock">
+        <code class="javascript">
+        new App(host, port, templateDir)
+        // defaults: host='localhost', port=3000, templateDir='templates'
+        </code>
+      </pre>
+    </li>
+    <li><strong>Properties:</strong>
+      <div class="props">
+        <dl>
+          <dt><code>host</code></dt>
+          <dd>Server hostname (string).</dd>
+          <dt><code>port</code></dt>
+          <dd>Server port (number).</dd>
+          <dt><code>templateDir</code></dt>
+          <dd>Directory for templates (string).</dd>
+          <dt><code>globals</code></dt>
+          <dd>Global template variables (object).</dd>
+          <dt><code>session</code></dt>
+          <dd>Protected session store — use <code>session.setValue</code> / <code>session.getValue</code>.</dd>
+          <dt><code>staticPath</code></dt>
+          <dd>URL prefix for static files (default <code>/static/</code>).</dd>
+          <dt><code>routes</code></dt>
+          <dd>Registered route handlers (object).</dd>
+          <dt><code>statusPages</code></dt>
+          <dd>Custom templates for status codes (object).</dd>
+        </dl>
+      </div>
+    </li>
+    <li><strong>Routing:</strong> use <strong>route(routePath, callback)</strong> to register handlers. Route templates may include parameters using &lt;&gt; (e.g. <code>/posts/&lt;id&gt;/</code>).</li>
+    <li><strong>Lifecycle hooks:</strong> <strong>beforeRequest(callback)</strong> and <strong>beforeResponse(callback)</strong> — callbacks run before request processing and before final response.</li>
+    <li><strong>Request/response handler:</strong> Handlers receive <strong>request</strong>, <strong>responseContext</strong>, and <strong>params</strong>. The <strong>responseContext</strong> object exposes helper methods:
+      <div class="methods">
+        <dl>
+          <dt><code>setStatus(code)</code></dt>
+          <dd>Set HTTP status code for the response.</dd>
+          <dt><code>addHeader(key, value)</code></dt>
+          <dd>Add a header to the response.</dd>
+          <dt><code>setContentType(type)</code></dt>
+          <dd>Set the Content-Type header for the response.</dd>
+          <dt><code>send404(context)</code></dt>
+          <dd>Return the configured 404 template content (if configured) and set status 404.</dd>
+          <dt><code>sendFileFromDir(path)</code></dt>
+          <dd>Read a file from disk and set an appropriate content type.</dd>
+          <dt><code>redirect(url, status=302)</code></dt>
+          <dd>Set redirect <code>Location</code> header and status code.</dd>
+        </dl>
+      </div>
+    </li>
+    <li><strong>Body parsing:</strong> For POST requests the framework parses <code>application/x-www-form-urlencoded</code> into <strong>request.form</strong>, and basic <code>multipart/form-data</code> into <strong>request.form</strong> and <strong>request.files</strong> (files include <em>filename</em>, <em>contentType</em>, and <em>data</em> Buffer).</li>
+    <li><strong>Session:</strong> `App` manages an internal protected session object. Use <strong>session.setValue(key, value, request)</strong> and <strong>session.getValue(key, request)</strong> to store per-client session data. Client identity is tracked with cookie `tmpltr-session`.</li>
+    <li><strong>Template rendering:</strong> <strong>renderTemplate(fileName, context, modifications)</strong> — supports a minimal templating workflow used by the demo (extends, blocks, conditionals, context replacement and simple modifications). Template files are resolved relative to `templateDir`.</li>
+    <li><strong>Server control:</strong> <strong>serve()</strong> — start listening; <strong>requestListener</strong> and <strong>processRequest(request,response)</strong> power the HTTP handling.</li>
+  </ul>
+
+  <h4>Quick example</h4>
+  <pre class="codeblock">
+      <code class="javascript">
+        const app = new App('localhost', 3000, 'demo/templates');
+
+        app.route('/hello/', (req, res) =&gt; {
+          res.setContentType('text/html');
+          return app.renderTemplate('index.html', { name: 'World' });
+        });
+
+        app.serve();
+      </code>
+    </pre>
+
+  <h4>ORM (src/orm.mjs)</h4>
+  <p>
+    `DbObject` is a minimal active-record style base class for SQLite (uses node:sqlite DatabaseSync). Subclasses must declare static <strong>tableName</strong> and <strong>fieldNames</strong> (array of field names) to map query results to instances.
+  </p>
+
+  <ul>
+    <li><strong>DbObject API:</strong>
+      <div class="orm-api">
+        <dl>
+          <dt><code>ResultError</code></dt>
+          <dd>Error subclass for ORM-specific errors.</dd>
+          <dt><code>DbObject.setDb(path)</code></dt>
+          <dd>Initialize the shared <code>DatabaseSync</code> instance at <code>path</code>.</dd>
+          <dt><code>DbObject.database</code></dt>
+          <dd>Getter for the configured database instance.</dd>
+          <dt><code>constructor(results)</code></dt>
+          <dd>Map query result columns to instance fields defined in <code>fieldNames</code>.</dd>
+          <dt><code>props(includeUndefined=true)</code></dt>
+          <dd>Return an object containing the instance's fields; omits undefined when <code>false</code>.</dd>
+          <dt><code>static getAll()</code></dt>
+          <dd>Return all rows as instances.</dd>
+          <dt><code>static getByFilter(filter, config)</code></dt>
+          <dd>Flexible query builder; supports operators via double-underscore suffixes (e.g. <code>field__lte</code>, <code>field__in</code>).</dd>
+          <dt><code>static first(filter, config)</code></dt>
+          <dd>Return the first matching row.</dd>
+          <dt><code>static create(item)</code></dt>
+          <dd>Insert a new record and return the created instance.</dd>
+          <dt><code>save()</code></dt>
+          <dd>Update when <code>id</code> exists; otherwise insert and return the persisted instance.</dd>
+          <dt><code>delete()</code></dt>
+          <dd>Delete the instance from the database (requires <code>id</code>).</dd>
+        </dl>
+      </div>
+    </li>
+  </ul>
+
+  <h4>ORM example</h4>
+  <pre class="codeblock">
+      <code class="javascript">
+        DbObject.setDb('./data/db.sqlite');
+
+        class User extends DbObject {
+          User.tableName = 'users';
+          User.fieldNames = ['id','firstName','lastName','email'];
+        }
+
+        const u = User.create({ firstName: 'Sam', lastName: 'Smith', email: 's@e' });
+        const found = User.getByFilter({ firstName: 'Sam' });
+        u.email = 'sam@example.com';
+        u.save();
+      </code>
+    </pre>
+
+  <p>
+    For production usage, ensure proper SQL schema creation and consider prepared statements and transactional safety. The ORM is intentionally small and synchronous for simplicity.
+  </p>
+
 {% endblock %}

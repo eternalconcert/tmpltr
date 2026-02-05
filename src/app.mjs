@@ -149,39 +149,8 @@ export class App {
     this.routes[routePath] = callback;
   }
 
-  redirect = (url, status = 302) => {
-    return ['', status, 'text/html', { Location: url }];
-  };
-
-  send404(context = {}) {
-    let content = 'File not found';
-    if (this.statusPages[404]) {
-      [content] = this.renderTemplate(this.statusPages[404], context);
-    }
-    return [content, 404, 'text/html'];
-  }
-
-  sendFileFromDir = (path) => {
-    let contentType = '';
-    let statusCode = '';
-    let responseContent = '';
-
-    try {
-      const decodedPath = decodeURIComponent(path);
-      const fileContent = fs.readFileSync(decodedPath);
-      const extension = extname(decodedPath).slice(1);
-      contentType = extension ? getContentType(extension) : types.html;
-      statusCode = 200;
-      responseContent = fileContent;
-    } catch (err) {
-      contentType = types.plain;
-      statusCode = 404;
-      responseContent = 'File not found';
-    }
-    return [responseContent, statusCode, contentType];
-  }
-
   processRequest = async (request, response) => {
+    const self = this;
     const responseContext = {
       status: undefined,
       contentType: types.html,
@@ -197,8 +166,50 @@ export class App {
         this.headers[key] = value;
         return this;
       },
-    };
 
+      setContentType(type) {
+        this.contentType = type;
+        return this;
+      },
+
+      send404(context = {}) {
+        let content = '404 - File not found';
+        if (self.statusPages[404]) {
+          content = this.renderTemplate(self.statusPages[404], context);
+        }
+        this.setStatus(404);
+        return content;
+      },
+
+      sendFileFromDir(path) {
+        let contentType = '';
+        let statusCode = '';
+        let responseContent = '';
+
+        try {
+          const decodedPath = decodeURIComponent(path);
+          const fileContent = fs.readFileSync(decodedPath);
+          const extension = extname(decodedPath).slice(1);
+          contentType = extension ? getContentType(extension) : types.html;
+          statusCode = 200;
+          responseContent = fileContent;
+        } catch (err) {
+          contentType = types.plain;
+          statusCode = 404;
+          responseContent = 'File not found';
+        }
+        this.setStatus(statusCode);
+        this.setContentType(contentType);
+        return responseContent;
+      },
+
+      redirect(url, status = 302) {
+        this.setStatus(status);
+        this.addHeader('Location', url);
+        return '';
+      },
+
+    };
 
     let clientKey = getClientKeyFromClientSession(request);
       if (!clientKey) {
@@ -317,22 +328,17 @@ export class App {
       // Falls es eine Route gibt, sie ausführen (request.form ist jetzt verfügbar!)
       if (!statusCode && matchedRoute) {
         const result = await matchedRoute.handler(request, responseContext, matchedRoute.params);
-
-        // result kann [content, status, contentType, headers] sein
-        let resArr = Array.isArray(result) ? result : [result];
-        responseContent = resArr[0];
-        statusCode = responseContext.status ? responseContext.status : resArr[1] || 200;
-        contentType = resArr[2] || "text/html";
-        const extraHeaders = resArr[3] || {};
+        responseContent = result;
+        statusCode = responseContext.status ? responseContext.status : 200;
 
         // Setze zusätzliche Header (z.B. für Redirect)
-        for (const [key, value] of Object.entries(extraHeaders)) {
+        for (const [key, value] of Object.entries(responseContext.headers)) {
           response.setHeader(key, value);
         }
       }
       response.setHeader("Server", 'TMPLTR');
       response.setHeader("Content-Length", Buffer.byteLength(responseContent));
-      response.setHeader("Content-Type", contentType);
+      response.setHeader("Content-Type", responseContext.contentType || "text/html");
 
       Object.entries(responseContext.headers).forEach((item) => response.setHeader(item[0], item[1]));
 
@@ -405,7 +411,7 @@ export class App {
       content = replaceModifications(content, modifications);
     }
 
-    return [content];
+    return content;
   }
 
   server = http.createServer(this.requestListener)
