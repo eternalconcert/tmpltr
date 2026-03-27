@@ -9,7 +9,7 @@ stages:
       nvm install 23
       nvm use 23
       npm install
-      node --test
+      SECRET_KEY=somereallylongsecretkeyevenlongerthan32characters node --test
   - name: image
     run: |
       docker login docker.softcreate.de --username $DOCKER_USERNAME --password $DOCKER_PASSWORD

@@ -1,6 +1,5 @@
 import { App } from '../src/app.mjs';
 import { DbObject } from '../src/orm.mjs';
-import url from 'url';
 
 const app = new App('0.0.0.0');
 
@@ -93,15 +92,14 @@ app.route('/test/', async () => {
     return app.renderTemplate('test.html', json);
 });
 
-app.route('/cookie/set/', (request, response) => {
-    const parsedUrl = url.parse(request.url, true);
-    const query = parsedUrl.query;
-    app.session.setValue('name', query.value, request)
-    return `you requsadfsadfested: ${request.url} with ${query.value}`;
+app.route('/cookie/set/', (request) => {
+    const name = request.searchParams.get('name');
+    request.session.setValue('name', name);
+    return `you requested: ${request.url} with name=${name}`;
 });
 
 app.route('/cookie/', (request) => {
-    return `value: ${app.session.getValue('name', request)}`;
+    return `value: ${request.session.getValue('name')}`;
 });
 
 app.route('/reqresp/', (request, response) => {
